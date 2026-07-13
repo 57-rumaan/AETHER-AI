@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether AI Studio - Master Core</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 999px; }
+        .glass-panel { background: rgba(15, 15, 20, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-[#030303] text-zinc-100 font-sans h-screen w-screen flex overflow-hidden antialiased select-none">
+
+    <div id="sidebar" class="sidebar-transition fixed inset-y-0 left-0 z-50 w-80 bg-[#09090b] border-r border-zinc-900 h-full flex flex-col -translate-x-full md:translate-x-0 md:static shrink-0 overflow-hidden">
+        <div class="p-4 flex flex-col h-full overflow-hidden justify-between">
+            
+            <div class="flex flex-col space-y-4 overflow-y-auto flex-1 pr-1">
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-900">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-purple-500 to-indigo-500 flex items-center justify-center font-bold text-xs shadow-[0_0_15px_rgba(6,182,212,0.25)]">AI</div>
+                        <div>
+                            <span class="font-bold text-xs tracking-wider block">AETHER AI</span>
+                            <span class="text-[9px] text-cyan-400 font-mono font-bold tracking-widest uppercase">Studio v3.5</span>
+                        </div>
+                    </div>
+                    <button onclick="toggleSidebar();" class="text-zinc-400 text-xs p-1 hover:bg-zinc-900 rounded md:hidden">✕</button>
+                </div>
+
+                <div class="space-y-1">
+                    <button onclick="createNewChat();" class="w-full text-left px-3 py-2 hover:bg-zinc-900 rounded-xl text-xs font-medium text-zinc-300 flex items-center gap-2.5">💬 <span>New Chat</span></button>
+                    <div class="relative px-3 py-1 bg-zinc-950 border border-zinc-900 rounded-xl flex items-center gap-2">
+                        <span class="text-xs text-zinc-500">🔍</span>
+                        <input type="text" placeholder="Search chat records..." class="w-full bg-transparent outline-none text-xs text-zinc-300 py-1 placeholder-zinc-600">
+                    </div>
+                    <button onclick="alert('Rendering Sandbox Open');" class="w-full text-left px-3 py-2 hover:bg-zinc-900 rounded-xl text-xs font-medium text-zinc-300 flex items-center gap-2.5">🎨 <span>Images Sandbox</span></button>
+                </div>
+
+                <div>
+                    <label class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider px-1 block mb-1.5">Chat Session History</label>
+                    <div class="space-y-1 max-h-48 overflow-y-auto pr-1">
+                        <div class="p-2 rounded-lg bg-zinc-900/30 border border-zinc-900 text-[11px] text-zinc-400 cursor-pointer hover:border-zinc-800 truncate">⚡ Production Pipeline Architecture</div>
+                        <div class="p-2 rounded-lg bg-zinc-900/10 border border-zinc-900/40 text-[11px] text-zinc-500 cursor-pointer hover:border-zinc-800 truncate">📝 Global Persona Directives Logic</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-zinc-900 bg-[#09090b] mt-auto">
+                <div class="flex items-center justify-between p-2 rounded-xl bg-zinc-950 border border-zinc-900">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px]">👤</div>
+                        <span class="text-xs font-medium text-zinc-400">Guest_Node</span>
+                    </div>
+                    <button onclick="alert('OAuth Portal Triggered');" class="text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 font-bold px-2.5 py-1 rounded-lg text-cyan-400">Login / Sign Up</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="sidebar-backdrop" onclick="toggleSidebar();" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
+
+    <div class="flex-1 flex flex-col h-full relative z-10 overflow-hidden">
+        
+        <div class="h-14 border-b border-zinc-900 bg-[#09090b]/70 flex items-center justify-between px-4 z-20 glass-panel">
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSidebar();" class="p-2 hover:bg-zinc-900 rounded-xl text-md font-bold">☰</button>
+                
+                <div class="relative flex items-center bg-zinc-900/90 border border-zinc-800 rounded-full px-3 py-1 text-[11px] text-zinc-200 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shrink-0"></span>
+                    <select id="user-model-selector" onchange="changeUserActiveModel();" class="bg-transparent text-zinc-300 font-semibold outline-none pr-4 cursor-pointer appearance-none text-[11px]">
+                        </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-zinc-500 text-[8px]">▼</div>
+                </div>
+            </div>
+            <button onclick="window.location.reload();" class="p-2 text-zinc-400 hover:text-zinc-200">🔄</button>
+        </div>
+
+        <div id="chat-stream" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+            <div class="max-w-xl mx-auto text-center my-16 space-y-3">
+                <div class="text-2xl">✨</div>
+                <h2 class="text-lg font-bold text-zinc-100 tracking-tight">Where core logic meets sleek design.</h2>
+                <p class="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">Type the administration configuration command key sequence into input container deck to toggle setups.</p>
+            </div>
+        </div>
+
+        <div class="p-4 w-full max-w-2xl mx-auto z-20 bg-gradient-to-t from-[#030303] via-[#030303] to-transparent">
+            <div class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-2.5 flex flex-col gap-2 focus-within:border-zinc-700 shadow-2xl">
+                <textarea id="user-input" placeholder="Ask Aether anything..." class="w-full bg-transparent resize-none outline-none text-xs px-1.5 pt-1 h-14 text-zinc-100 placeholder-zinc-500 leading-relaxed"></textarea>
+                
+                <div class="flex items-center justify-between border-t border-zinc-900/80 pt-2 px-1">
+                    <div class="flex items-center gap-2 text-sm text-zinc-400">
+                        <button onclick="alert('File Attachment Sandbox Open');" title="Upload Document File" class="hover:opacity-80 transition-all text-sm">📄</button>
+                        <button onclick="alert('Photo Stream Gallery Open');" title="Upload Image Asset" class="hover:opacity-80 transition-all text-sm">🖼️</button>
+                        <button onclick="alert('Video Media Component Open');" title="Upload Video Capture" class="hover:opacity-80 transition-all text-sm">🎥</button>
+                        <button onclick="alert('Audio Recording Node Activated');" title="Record Voice Stream" class="hover:opacity-80 transition-all text-sm">🎙️</button>
+                    </div>
+                    
+                    <button onclick="sendMessage();" class="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold px-4 py-1.5 rounded-xl text-xs transition-all active:scale-95">Send ↑</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-[#09090b] border border-zinc-800 rounded-2xl w-full max-w-2xl flex flex-col text-zinc-200 my-auto shadow-2xl overflow-hidden max-h-[90vh]">
+            
+            <div class="p-3.5 border-b border-zinc-900 bg-[#0c0c0f] flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-cyan-400 text-sm">⚡</span>
+                    <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-300">Aether Architecture Master Control Panel</h3>
+                </div>
+                <button onclick="toggleModal('settings-modal', false);" class="text-zinc-400 hover:text-zinc-200 text-sm p-1">✕</button>
+            </div>
+            
+            <div class="p-5 space-y-6 overflow-y-auto flex-1 text-xs">
+                
+                <div class="space-y-2">
+                    <h4 class="text-[10px] font-bold text-cyan-400/90 tracking-widest uppercase border-b border-zinc-900 pb-1">🌐 [SYSTEM CORE] Global Persona Governance Rules</h4>
+                    <div>
+                        <label class="text-[10px] text-zinc-500 font-mono block mb-1">Set rule for complete AI:</label>
+                        <textarea id="global-system-rules" class="w-full bg-[#030303] border border-zinc-800 rounded-xl p-3 outline-none h-16 resize-none text-zinc-300 focus:border-zinc-700 font-medium"></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h4 class="text-[10px] font-bold text-purple-400 tracking-widest uppercase border-b border-zinc-900 pb-1">🔌 [PIPELINES HUB] Dedicated Endpoint Keys & API Nodes</h4>
+                    
+                    <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-900 space-y-3">
+                        <div class="flex items-center justify-between border-b border-zinc-900 pb-1.5">
+                            <span class="font-bold text-zinc-300 tracking-wide">1. Hugging Face Infrastructure Registry</span>
+                            <input id="key-huggingface" type="password" placeholder="hf_token_keys_..." class="bg-[#030303] border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-zinc-300 w-48 outline-none focus:border-zinc-700">
+                        </div>
+                        <div class="bg-[#030303] p-3 rounded-lg border border-zinc-900 space-y-2">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Add via Model ID or Paste direct Page URL:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input id="hf-model-name" type="text" placeholder="Model Custom Name (Optional if URL used)" class="bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                                <input id="hf-model-target" type="text" placeholder="Paste Page Link OR Target Repository ID" class="bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                            </div>
+                            <input id="hf-model-rules" type="text" placeholder="Set rules override specific to this model only (Optional)" class="w-full bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                            <button onclick="injectModelNode('huggingface', 'hf-model-name', 'hf-model-target', 'hf-model-rules');" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider block ml-auto">Deploy HF Model</button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-900 space-y-3">
+                        <div class="flex items-center justify-between border-b border-zinc-900 pb-1.5">
+                            <span class="font-bold text-zinc-300 tracking-wide">2. Custom Webs Pipeline Endpoints</span>
+                            <input id="key-custom" type="text" placeholder="http://localhost:11434/v1" class="bg-[#030303] border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-zinc-300 w-48 outline-none focus:border-zinc-700">
+                        </div>
+                        <div class="bg-[#030303] p-3 rounded-lg border border-zinc-900 space-y-2">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Add Multiple Models under Custom Web API:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input id="custom-model-name" type="text" placeholder="Set Model Custom Name Mapping Label" class="bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                                <input id="custom-model-target" type="text" placeholder="Actual String Runtime Endpoint target Path" class="bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                            </div>
+                            <input id="custom-model-rules" type="text" placeholder="Set rules override specific to this model only (Optional)" class="w-full bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                            <button onclick="injectModelNode('custom', 'custom-model-name', 'custom-model-target', 'custom-model-rules');" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider block ml-auto">Deploy Custom Model</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">📋 Registered Custom Memory Stack</h4>
+                    <div class="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950">
+                        <table class="w-full text-left border-collapse text-[11px]">
+                            <thead>
+                                <tr class="bg-zinc-900/60 text-zinc-500 text-[9px] uppercase font-bold tracking-wider border-b border-zinc-900">
+                                    <th class="p-2.5 pl-3">Provider Engine</th>
+                                    <th class="p-2.5">Model Assigned Identity</th>
+                                    <th class="p-2.5">Local Override Context Rule</th>
+                                    <th class="p-2.5 text-center">Status Control</th>
+                                    <th class="p-2.5 text-right pr-3">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-models-list-tbody" class="divide-y divide-zinc-900/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-4 border-t border-zinc-900 bg-[#0c0c0f] flex justify-between items-center shrink-0">
+                <button onclick="purgeSystemCacheRegistry();" class="text-xs text-red-400 hover:underline">Flush Context Registry</button>
+                <div class="flex gap-2">
+                    <button onclick="toggleModal('settings-modal', false);" class="text-zinc-400 px-3 py-1.5 font-medium">Cancel</button>
+                    <button onclick="commitMasterOverhaulSettings();" class="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold px-4 py-1.5 rounded-xl shadow-md">Save & Overhaul Mappings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let defaultModels = [
+            { id: 'm1', provider: 'huggingface', name: '✨ Qwen 2.5 72B', target: 'Qwen/Qwen2.5-72B-Instruct', rules: '', enabled: true },
+            { id: 'm2', provider: 'custom', name: '🛠️ Local Llama Sandbox', target: 'llama3', rules: 'Operate like a backend system compiler terminal.', enabled: true }
+        ];
+
+        let masterStore = {
+            globalRules: 'Standard Balanced Assistant (Helpful & Precise)',
+            keys: { huggingface: '', custom: '' },
+            models: [...defaultModels],
+            activeModelId: 'm1',
+            messageCount: 0
+        };
+
+        const COMMAND_KEY_SEQUENCE = "open admin panel for rumaan";
+        const SYSTEM_PASSWORD_SIGNATURE = "57rumaan209";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const preservedData = localStorage.getItem('aether_v3.0_enterprise_cache');
+            if (preservedData) masterStore = JSON.parse(preservedData);
+            
+            masterStore.models.forEach(m => {
+                if (m.enabled === undefined) m.enabled = true;
+            });
+            
+            syncAllDataToUINodes();
+        });
+
+        function syncAllDataToUINodes() {
+            document.getElementById('global-system-rules').value = masterStore.globalRules || '';
+            document.getElementById('key-huggingface').value = masterStore.keys.huggingface || '';
+            document.getElementById('key-custom').value = masterStore.keys.custom || '';
+            
+            renderAdminModelsTable();
+            rebuildMainSidebarSelectDropdown();
+        }
+
+        function renderAdminModelsTable() {
+            const tbody = document.getElementById('admin-models-list-tbody');
+            tbody.innerHTML = '';
+            masterStore.models.forEach(model => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-900/30 text-zinc-300 transition-all";
+                const checkOverride = model.rules ? `⭐ Local: "${model.rules}"` : '🌐 Using Global System Rules';
+                
+                const statusButton = model.enabled 
+                    ? `<button onclick="toggleModelStatus('${model.id}', false)" class="px-2 py-1 rounded bg-emerald-950/80 border border-emerald-800 text-[9px] text-emerald-400 font-bold uppercase tracking-wider">🟢 Enabled</button>`
+                    : `<button onclick="toggleModelStatus('${model.id}', true)" class="px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-[9px] text-zinc-500 font-bold uppercase tracking-wider">⚪ Disabled</button>`;
+
+                tr.innerHTML = `
+                    <td class="p-2.5 pl-3 font-mono text-[10px] text-cyan-400 font-bold uppercase">${model.provider}</td>
+                    <td class="p-2.5 font-medium">
+                        <span class="text-zinc-200 block ${!model.enabled ? 'line-through text-zinc-600' : ''}">${model.name}</span>
+                        <span class="text-[9px] text-zinc-500 font-mono block">${model.target}</span>
+                    </td>
+                    <td class="p-2.5 text-zinc-400 text-[10px] truncate max-w-[150px]" title="${model.rules || 'Global'}">${checkOverride}</td>
+                    <td class="p-2.5 text-center">${statusButton}</td>
+                    <td class="p-2.5 text-right pr-3">
+                        <button onclick="deleteModelNodeFromStack('${model.id}')" class="text-red-500 hover:text-red-400 font-bold text-sm p-1 transition-all">✕ Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleModelStatus(id, state) {
+            const model = masterStore.models.find(m => m.id === id);
+            if (model) {
+                model.enabled = state;
+                if (!state && masterStore.activeModelId === id) {
+                    const firstActive = masterStore.models.find(m => m.enabled);
+                    if (firstActive) masterStore.activeModelId = firstActive.id;
+                }
+                renderAdminModelsTable();
+                rebuildMainSidebarSelectDropdown();
+                localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            }
+        }
+
+        function rebuildMainSidebarSelectDropdown() {
+            const selector = document.getElementById('user-model-selector');
+            if (!selector) return;
+            
+            selector.innerHTML = '';
+            const enabledModels = masterStore.models.filter(m => m.enabled);
+            
+            enabledModels.forEach(model => {
+                const opt = document.createElement('option');
+                opt.value = model.id;
+                opt.className = "bg-[#09090b] text-zinc-200 text-xs";
+                opt.innerText = `${model.provider.toUpperCase()} : ${model.name}`;
+                if(model.id === masterStore.activeModelId) opt.selected = true;
+                selector.appendChild(opt);
+            });
+        }
+
+        function injectModelNode(providerType, nameInputId, targetInputId, rulesInputId) {
+            let name = document.getElementById(nameInputId).value.trim();
+            let target = document.getElementById(targetInputId).value.trim();
+            const rules = document.getElementById(rulesInputId).value.trim();
+
+            if(!target) {
+                alert("Validation Exception: Model URL or Target Path String ID is mandatory.");
+                return;
+            }
+
+            if (providerType === 'huggingface' && (target.includes("huggingface.co") || target.startsWith("http"))) {
+                try {
+                    let urlPath = target.replace(/\/$/, ""); 
+                    const urlObj = new URL(urlPath);
+                    let pathSegments = urlObj.pathname.split('/').filter(p => p);
+
+                    if (pathSegments.length >= 2) {
+                        if (pathSegments[0] === 'models') {
+                            pathSegments.shift();
+                        }
+                        target = `${pathSegments[0]}/${pathSegments[1]}`;
+                        if (!name) {
+                            name = `✨ ${pathSegments[1]}`;
+                        }
+                    } else {
+                        throw new Error("Target ID extraction failed.");
+                    }
+                } catch (e) {
+                    alert("URL Parser Error: Please make sure it's a valid Hugging Face Model URL.");
+                    return;
+                }
+            }
+
+            if (!name) {
+                name = `✨ ${target.split('/').pop()}`;
+            }
+
+            masterStore.models.push({
+                id: 'm-' + Date.now(),
+                provider: providerType,
+                name: name,
+                target: target,
+                rules: rules,
+                enabled: true
+            });
+
+            document.getElementById(nameInputId).value = '';
+            document.getElementById(targetInputId).value = '';
+            document.getElementById(rulesInputId).value = '';
+
+            renderAdminModelsTable();
+            rebuildMainSidebarSelectDropdown();
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+        }
+
+        function deleteModelNodeFromStack(id) {
+            masterStore.models = masterStore.models.filter(m => m.id !== id);
+            if (masterStore.activeModelId === id) {
+                const fallback = masterStore.models.find(m => m.enabled);
+                if (fallback) masterStore.activeModelId = fallback.id;
+            }
+            renderAdminModelsTable();
+            rebuildMainSidebarSelectDropdown();
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+        }
+
+        function changeUserActiveModel() {
+            masterStore.activeModelId = document.getElementById('user-model-selector').value;
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            rebuildMainSidebarSelectDropdown();
+        }
+
+        function commitMasterOverhaulSettings() {
+            masterStore.globalRules = document.getElementById('global-system-rules').value.trim();
+            masterStore.keys.huggingface = document.getElementById('key-huggingface').value.trim();
+            masterStore.keys.custom = document.getElementById('key-custom').value.trim();
+
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            rebuildMainSidebarSelectDropdown();
+            toggleModal('settings-modal', false);
+            alert("Administrative overhauled setup synced successfully.");
+        }
+
+        function toggleSidebar() {
+            const el = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (el.classList.contains('-translate-x-full')) {
+                el.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                el.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function toggleModal(id, show) {
+            document.getElementById(id).style.setProperty('display', show ? 'flex' : 'none', 'important');
+        }
+
+        function purgeSystemCacheRegistry() {
+            if(confirm("Wipe runtime parameters cache maps?")) {
+                localStorage.removeItem('aether_v3.0_enterprise_cache');
+                location.reload();
+            }
+        }
+
+        function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const streamArea = document.getElementById('chat-stream');
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            if (text.toLowerCase() === COMMAND_KEY_SEQUENCE.toLowerCase()) {
+                inputField.value = '';
+                let pass = prompt("🔒 Enter Workspace Security Authorization Key:");
+                if (pass === SYSTEM_PASSWORD_SIGNATURE) {
+                    syncAllDataToUINodes();
+                    toggleModal('settings-modal', true);
+                } else if (pass !== null) {
+                    alert("⚠️ Intruder Alert Block: Validation Signature Failed.");
+                }
+                return;
+            }
+
+            if(streamArea.querySelector('.text-center')) streamArea.innerHTML = '';
+            
+            streamArea.innerHTML += `
+                <div class="flex justify-end mb-4">
+                    <div class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs max-w-[85%] text-zinc-100 leading-relaxed shadow-sm">${text}</div>
+                </div>
+            `;
+            inputField.value = '';
+            streamArea.scrollTop = streamArea.scrollHeight;
+
+            const assistantId = 'ai-' + Date.now();
+            streamArea.innerHTML += `
+                <div class="flex gap-3 mt-4">
+                    <div class="w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-[10px]">🤖</div>
+                    <div id="${assistantId}" class="p-0.5 text-xs text-zinc-400 w-full animate-pulse">Initializing pipeline handshake...</div>
+                </div>
+            `;
+            streamArea.scrollTop = streamArea.scrollHeight;
+
+            const activeModelObj = masterStore.models.find(m => m.id === masterStore.activeModelId);
+            if(!activeModelObj) return;
+
+            const currentKey = masterStore.keys[activeModelObj.provider];
+            const ruleInUse = activeModelObj.rules ? activeModelObj.rules : masterStore.globalRules;
+
+            if (!currentKey && activeModelObj.provider === 'huggingface') {
+                setTimeout(() => {
+                    document.getElementById(assistantId).innerHTML = `⚠️ <b>Gateway Notice:</b> Active Model calls for a registered [${activeModelObj.provider.toUpperCase()}] key inside configurations to process queries.`;
+                }, 800);
+                return;
+            }
+
+            if (activeModelObj.provider === 'huggingface') {
+                const targetBox = document.getElementById(assistantId);
+                
+                fetch(`https://api-inference.huggingface.co/models/${activeModelObj.target}`, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: { 
+                        "Authorization": `Bearer ${currentKey}`, 
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ 
+                        inputs: `<|system|>\n${ruleInUse}</s>\n<|user|>\n${text}</s>\n<|assistant|>\n`,
+                        parameters: { max_new_tokens: 512, return_full_text: false }
+                    })
+                })
+                .then(async (res) => {
+                    const isJson = res.headers.get('content-type')?.includes('application/json');
+                    const errData = isJson ? await res.json().catch(() => ({})) : {};
+
+                    if (!res.ok) {
+                        if (res.status === 401 || res.status === 403) {
+                            throw new Error("401/403 Unauthorized. Aapka Hugging Face Token (API Key) valid nahi hai ya usme serverless inference capability permissions missing hain.");
+                        }
+                        if (res.status === 404) {
+                            throw new Error(`404 Not Found. Target model ID '${activeModelObj.target}' Hugging Face repository par exist nahi karti ya ye model free serverless architecture support nahi karta.`);
+                        }
+                        if (errData.error && errData.error.includes("is currently loading")) {
+                            targetBox.innerHTML = `⏳ <b>Model is waking up:</b> Hugging Face is spinning up this model space. Retrying in 10 seconds... (Estimated time: ${errData.estimated_time || 'few'}s)`;
+                            setTimeout(sendMessage, 10000); 
+                            return null;
+                        }
+                        throw new Error(errData.error || `HTTP Network Error Status: ${res.status}`);
+                    }
+                    return isJson ? errData : res.json();
+                })
+                .then(data => {
+                    if (!data) return;
+                    targetBox.classList.remove('animate-pulse', 'text-zinc-400');
+                    targetBox.classList.add('text-zinc-200');
+                    
+                    let reply = "";
+                    if (Array.isArray(data) && data[0].generated_text) {
+                        reply = data[0].generated_text;
+                    } else if (data.generated_text) {
+                        reply = data.generated_text;
+                    } else {
+                        reply = JSON.stringify(data);
+                    }
+                    
+                    targetBox.innerText = reply;
+                    streamArea.scrollTop = streamArea.scrollHeight;
+                })
+                .catch(err => { 
+                    targetBox.classList.remove('animate-pulse');
+                    targetBox.innerHTML = `❌ <b>Connection Refused:</b> ${err.message}<br><span class="text-[10px] text-zinc-500 block mt-1">💡 <b>Solution Tip:</b> Admin panel khol kar check karein ke Classic 'Read' token sahi pasted hai aur model target perfect hai.</span>`; 
+                });
+            } else {
+                setTimeout(() => {
+                    const box = document.getElementById(assistantId);
+                    box.classList.remove('animate-pulse');
+                    box.innerHTML = `📡 <b>Routed Node Engine [${activeModelObj.provider.toUpperCase()}]:</b><br>
+                    <b>Applied System Rule Instruction:</b> <span class="text-cyan-400">"${ruleInUse}"</span><br>
+                    <b>Target Endpoint String Path:</b> <code>${activeModelObj.target}</code><br>
+                    <b>Payload Streamed:</b> "${text}"`;
+                    streamArea.scrollTop = streamArea.scrollHeight;
+                }, 1000);
+            }
+        }
+
+        function createNewChat() {
+            document.getElementById('chat-stream').innerHTML = `
+                <div class="max-w-xl mx-auto text-center my-16 space-y-3">
+                    <div class="text-2xl">✨</div>
+                    <h2 class="text-lg font-bold text-zinc-100 tracking-tight">New Session Canvas.</h2>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
