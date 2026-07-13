@@ -150,7 +150,7 @@
 
     <script>
         let defaultModels = [
-            { id: 'm1', provider: 'huggingface', name: '✨ Qwen 2.5 1.5B (Test)', target: 'Qwen/Qwen2.5-1.5B-Instruct', rules: '', enabled: true }
+            { id: 'm1', provider: 'huggingface', name: '✨ Qwen 2.5 7B (Recommended)', target: 'Qwen/Qwen2.5-7B-Instruct', rules: '', enabled: true }
         ];
 
         let masterStore = {
@@ -240,21 +240,16 @@
                 return;
             }
 
-            if (providerType === 'huggingface' && (target.includes("huggingface.co") || target.startsWith("http"))) {
+            if (target.includes("huggingface.co")) {
                 try {
-                    let urlPath = target.replace(/\/$/, ""); 
-                    const urlObj = new URL(urlPath);
-                    let pathSegments = urlObj.pathname.split('/').filter(p => p);
-                    if (pathSegments[0] === 'models') pathSegments.shift();
-                    
-                    if (pathSegments.length >= 2) {
-                        target = `${pathSegments[0]}/${pathSegments[1]}`;
-                        if (!name) name = `✨ ${pathSegments[1]}`;
+                    let cleanedPath = target.replace(/\/$/, "");
+                    const urlObj = new URL(cleanedPath.startsWith("http") ? cleanedPath : "https://" + cleanedPath);
+                    let segments = urlObj.pathname.split('/').filter(p => p);
+                    if (segments[0] === 'models') segments.shift();
+                    if (segments.length >= 2) {
+                        target = `${segments[0]}/${segments[1]}`;
                     }
-                } catch (e) {
-                    alert("Invalid Link Structure.");
-                    return;
-                }
+                } catch(e) {}
             }
 
             if (!name) name = `✨ ${target.split('/').pop()}`;
@@ -326,96 +321,3 @@
 
             if (text.toLowerCase() === COMMAND_KEY_SEQUENCE.toLowerCase()) {
                 inputField.value = '';
-                let pass = prompt("🔒 Enter Access Key:");
-                if (pass === SYSTEM_PASSWORD_SIGNATURE) {
-                    syncAllDataToUINodes();
-                    toggleModal('settings-modal', true);
-                }
-                return;
-            }
-
-            if(streamArea.querySelector('.text-center')) streamArea.innerHTML = '';
-            
-            streamArea.innerHTML += `
-                <div class="flex justify-end mb-4">
-                    <div class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs max-w-[85%] text-zinc-100 leading-relaxed shadow-sm">${text}</div>
-                </div>
-            `;
-            inputField.value = '';
-            streamArea.scrollTop = streamArea.scrollHeight;
-
-            const assistantId = 'ai-' + Date.now();
-            streamArea.innerHTML += `
-                <div class="flex gap-3 mt-4">
-                    <div class="w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-[10px]">🤖</div>
-                    <div id="${assistantId}" class="p-0.5 text-xs text-zinc-400 w-full animate-pulse">Running secure gateway stream...</div>
-                </div>
-            `;
-            streamArea.scrollTop = streamArea.scrollHeight;
-
-            const activeModelObj = masterStore.models.find(m => m.id === masterStore.activeModelId);
-            if(!activeModelObj) return;
-
-            const currentKey = masterStore.keys.huggingface;
-            const ruleInUse = activeModelObj.rules ? activeModelObj.rules : masterStore.globalRules;
-
-            const targetBox = document.getElementById(assistantId);
-
-            fetch(`https://api-inference.huggingface.co/models/${activeModelObj.target}`, {
-                method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${currentKey}`, 
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ 
-                    inputs: `<|system|>\n${ruleInUse}</s>\n<|user|>\n${text}</s>\n<|assistant|>\n`,
-                    parameters: { max_new_tokens: 512, return_full_text: false }
-                })
-            })
-            .then(async (res) => {
-                const isJson = res.headers.get('content-type')?.includes('application/json');
-                const errData = isJson ? await res.json().catch(() => ({})) : {};
-
-                if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                        throw new Error("401 Unauthorized: Token ghalat hai ya scope permissions missing hain.");
-                    }
-                    if (res.status === 404) {
-                        throw new Error(`404 Not Found: Model Serverless tier par available nahi hai.`);
-                    }
-                    if (errData.error && errData.error.includes("is currently loading")) {
-                        targetBox.innerHTML = `⏳ <b>Model waking up...</b> Server load ho raha hai. Retrying in 8s...`;
-                        setTimeout(sendMessage, 8000); 
-                        return null;
-                    }
-                    throw new Error(errData.error || `HTTP Status ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                targetBox.classList.remove('animate-pulse', 'text-zinc-400');
-                targetBox.classList.add('text-zinc-200');
-                
-                let reply = (Array.isArray(data) && data[0].generated_text) ? data[0].generated_text : (data.generated_text || JSON.stringify(data));
-                targetBox.innerText = reply;
-                streamArea.scrollTop = streamArea.scrollHeight;
-            })
-            .catch(err => { 
-                targetBox.classList.remove('animate-pulse');
-                targetBox.innerHTML = `❌ <b>Error:</b> ${err.message}`; 
-                streamArea.scrollTop = streamArea.scrollHeight;
-            });
-        }
-
-        function createNewChat() {
-            document.getElementById('chat-stream').innerHTML = `
-                <div class="max-w-xl mx-auto text-center my-auto space-y-3 py-8">
-                    <div class="text-2xl">✨</div>
-                    <h2 class="text-base font-bold text-zinc-100 tracking-tight">New Session Canvas.</h2>
-                </div>
-            `;
-        }
-    </script>
-</body>
-</html>
