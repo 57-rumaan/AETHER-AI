@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aether AI Studio - Master Core</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 999px; }
+        .glass-panel { background: rgba(15, 15, 20, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-[#030303] text-zinc-100 font-sans h-[100dvh] w-full flex overflow-hidden antialiased select-none">
+
+    <!-- 1. RESPONSIVE SIDEBAR PANEL -->
+    <div id="sidebar" class="sidebar-transition fixed inset-y-0 left-0 z-50 w-80 bg-[#09090b] border-r border-zinc-900 h-full flex flex-col -translate-x-full md:translate-x-0 md:static shrink-0 overflow-hidden">
+        <div class="p-4 flex flex-col h-full overflow-hidden justify-between">
+            <div class="flex flex-col space-y-4 overflow-y-auto flex-1 pr-1">
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-900">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 via-purple-500 to-indigo-500 flex items-center justify-center font-bold text-xs shadow-[0_0_15px_rgba(6,182,212,0.25)]">AI</div>
+                        <div>
+                            <span class="font-bold text-xs tracking-wider block">AETHER AI</span>
+                            <span class="text-[9px] text-cyan-400 font-mono font-bold tracking-widest uppercase">Studio v3.5</span>
+                        </div>
+                    </div>
+                    <button onclick="toggleSidebar();" class="text-zinc-400 text-xs p-1 hover:bg-zinc-900 rounded md:hidden">✕</button>
+                </div>
+                <div class="space-y-1">
+                    <button onclick="createNewChat();" class="w-full text-left px-3 py-2 hover:bg-zinc-900 rounded-xl text-xs font-medium text-zinc-300 flex items-center gap-2.5">💬 <span>New Chat</span></button>
+                    <div class="relative px-3 py-1 bg-zinc-950 border border-zinc-900 rounded-xl flex items-center gap-2">
+                        <span class="text-xs text-zinc-500">🔍</span>
+                        <input type="text" placeholder="Search chat records..." class="w-full bg-transparent outline-none text-xs text-zinc-300 py-1 placeholder-zinc-600">
+                    </div>
+                </div>
+            </div>
+            <div class="pt-3 border-t border-zinc-900 bg-[#09090b] mt-auto">
+                <div class="flex items-center justify-between p-2 rounded-xl bg-zinc-950 border border-zinc-900">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px]">👤</div>
+                        <span class="text-xs font-medium text-zinc-400">Guest_Node</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar-backdrop" onclick="toggleSidebar();" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
+
+    <!-- 2. CORE WORKSPACE -->
+    <div class="flex-1 flex flex-col h-full w-full relative z-10 overflow-hidden">
+        
+        <!-- Top bar -->
+        <div class="h-14 border-b border-zinc-900 bg-[#09090b]/70 flex items-center justify-between px-4 z-20 shrink-0 glass-panel">
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSidebar();" class="p-2 hover:bg-zinc-900 rounded-xl text-md font-bold">☰</button>
+                <div class="relative flex items-center bg-zinc-900/90 border border-zinc-800 rounded-full px-3 py-1 text-[11px] text-zinc-200 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shrink-0"></span>
+                    <select id="user-model-selector" onchange="changeUserActiveModel();" class="bg-transparent text-zinc-300 font-semibold outline-none pr-4 cursor-pointer appearance-none text-[11px]"></select>
+                    <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-zinc-500 text-[8px]">▼</div>
+                </div>
+            </div>
+            <button onclick="window.location.reload();" class="p-2 text-zinc-400 hover:text-zinc-200">🔄</button>
+        </div>
+
+        <!-- Chat Stream -->
+        <div id="chat-stream" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 flex flex-col">
+            <div class="max-w-xl mx-auto text-center my-auto space-y-3 py-8">
+                <div class="text-2xl">✨</div>
+                <h2 class="text-base font-bold text-zinc-100 tracking-tight">Where core logic meets sleek design.</h2>
+                <p class="text-[11px] text-zinc-500 max-w-xs mx-auto">Type the administration configuration command key sequence into input container deck to toggle setups.</p>
+            </div>
+        </div>
+
+        <!-- Sticky Input Area -->
+        <div class="p-4 w-full max-w-2xl mx-auto z-20 bg-gradient-to-t from-[#030303] via-[#030303] to-transparent shrink-0">
+            <div class="bg-[#09090b] border border-zinc-800/80 rounded-2xl p-2.5 flex flex-col gap-2 focus-within:border-zinc-700 shadow-2xl">
+                <textarea id="user-input" placeholder="Ask Aether anything..." class="w-full bg-transparent resize-none outline-none text-xs px-1.5 pt-1 h-14 text-zinc-100 placeholder-zinc-500 leading-relaxed"></textarea>
+                <div class="flex items-center justify-between border-t border-zinc-900/80 pt-2 px-1">
+                    <div class="flex items-center gap-2 text-sm text-zinc-400">
+                        <span class="text-xs opacity-40">Ready</span>
+                    </div>
+                    <button onclick="sendMessage();" class="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold px-4 py-1.5 rounded-xl text-xs transition-all active:scale-95">Send ↑</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ADMINISTRATIVE CONTROL PANEL MODAL -->
+    <div id="settings-modal" class="fixed inset-0 z-50 bg-black/95 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-[#09090b] border border-zinc-800 rounded-2xl w-full max-w-2xl flex flex-col text-zinc-200 my-auto shadow-2xl overflow-hidden max-h-[90vh]">
+            <div class="p-3.5 border-b border-zinc-900 bg-[#0c0c0f] flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-cyan-400 text-sm">⚡</span>
+                    <h3 class="text-xs font-bold tracking-wider uppercase text-zinc-300">Aether Master Control Panel</h3>
+                </div>
+                <button onclick="toggleModal('settings-modal', false);" class="text-zinc-400 hover:text-zinc-200 text-sm p-1">✕</button>
+            </div>
+            
+            <div class="p-5 space-y-6 overflow-y-auto flex-1 text-xs">
+                <div class="space-y-2">
+                    <h4 class="text-[10px] font-bold text-cyan-400/90 tracking-widest uppercase border-b border-zinc-900 pb-1">🌐 System Persona Directive Rules</h4>
+                    <textarea id="global-system-rules" class="w-full bg-[#030303] border border-zinc-800 rounded-xl p-3 outline-none h-16 resize-none text-zinc-300 font-medium"></textarea>
+                </div>
+
+                <div class="space-y-4">
+                    <h4 class="text-[10px] font-bold text-purple-400 tracking-widest uppercase border-b border-zinc-900 pb-1">🔌 Infrastructure Endpoints & Registry</h4>
+                    <div class="p-4 rounded-xl bg-zinc-950 border border-zinc-900 space-y-3">
+                        <div class="flex items-center justify-between border-b border-zinc-900 pb-1.5">
+                            <span class="font-bold text-zinc-300">Hugging Face Security Key</span>
+                            <input id="key-huggingface" type="password" placeholder="hf_..." class="bg-[#030303] border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-zinc-300 w-48 outline-none">
+                        </div>
+                        <div class="bg-[#030303] p-3 rounded-lg border border-zinc-900 space-y-2">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase block">Deploy Dynamic Target Model Architecture:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input id="hf-model-name" type="text" placeholder="Model Custom Label Name (Optional)" class="bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                                <input id="hf-model-target" type="text" placeholder="Paste Full URL or String ID Repo Path" class="bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                            </div>
+                            <input id="hf-model-rules" type="text" placeholder="Override execution rules context specifically for this node (Optional)" class="w-full bg-[#09090b] border border-zinc-800 rounded-lg p-2 text-xs text-zinc-300 outline-none">
+                            <button onclick="injectModelNode('huggingface', 'hf-model-name', 'hf-model-target', 'hf-model-rules');" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider block ml-auto">Deploy Model Node</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">📋 Registered Custom Memory Stack</h4>
+                    <div class="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950">
+                        <table class="w-full text-left border-collapse text-[11px]">
+                            <thead>
+                                <tr class="bg-zinc-900/60 text-zinc-500 text-[9px] uppercase font-bold tracking-wider border-b border-zinc-900">
+                                    <th class="p-2.5 pl-3">Engine</th>
+                                    <th class="p-2.5">Identity</th>
+                                    <th class="p-2.5 text-center">Status</th>
+                                    <th class="p-2.5 text-right pr-3">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-models-list-tbody" class="divide-y divide-zinc-900/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-zinc-900 bg-[#0c0c0f] flex justify-between items-center shrink-0">
+                <button onclick="purgeSystemCacheRegistry();" class="text-xs text-red-400 hover:underline">Flush Storage</button>
+                <div class="flex gap-2">
+                    <button onclick="toggleModal('settings-modal', false);" class="text-zinc-400 px-3 py-1.5 font-medium">Cancel</button>
+                    <button onclick="commitMasterOverhaulSettings();" class="bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-bold px-4 py-1.5 rounded-xl shadow-md">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CRASH PREVENTING DEFAULTS
+        const defaultModels = [
+            { id: 'm1', provider: 'huggingface', name: '✨ Qwen 2.5 7B (Recommended)', target: 'Qwen/Qwen2.5-7B-Instruct', rules: '', enabled: true }
+        ];
+
+        let masterStore = {
+            globalRules: 'Be a precise studio technical assistant.',
+            keys: { huggingface: '' },
+            models: [...defaultModels],
+            activeModelId: 'm1'
+        };
+
+        const COMMAND_KEY_SEQUENCE = "open admin panel for rumaan";
+        const SYSTEM_PASSWORD_SIGNATURE = "57rumaan209";
+
+        // Safe Initialization sequence to prevent state lockups
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const preservedData = localStorage.getItem('aether_v3.0_enterprise_cache');
+                if (preservedData) {
+                    const parsed = JSON.parse(preservedData);
+                    if (parsed && parsed.models && Array.isArray(parsed.models) && parsed.models.length > 0) {
+                        masterStore = parsed;
+                    }
+                }
+            } catch (e) {
+                console.error("Localstorage read failed, resetting to defaults", e);
+                localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            }
+
+            // Guarantee fields are present on load
+            if (!masterStore.models || !Array.isArray(masterStore.models) || masterStore.models.length === 0) {
+                masterStore.models = [...defaultModels];
+            }
+            if (!masterStore.keys) masterStore.keys = { huggingface: '' };
+            if (!masterStore.activeModelId) masterStore.activeModelId = masterStore.models[0].id;
+
+            masterStore.models.forEach(m => { 
+                if (m.enabled === undefined) m.enabled = true; 
+            });
+
+            syncAllDataToUINodes();
+        });
+
+        function syncAllDataToUINodes() {
+            try {
+                document.getElementById('global-system-rules').value = masterStore.globalRules || '';
+                document.getElementById('key-huggingface').value = masterStore.keys.huggingface || '';
+                renderAdminModelsTable();
+                rebuildMainSidebarSelectDropdown();
+            } catch (err) {
+                console.error("Sync error:", err);
+            }
+        }
+
+        function renderAdminModelsTable() {
+            const tbody = document.getElementById('admin-models-list-tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            masterStore.models.forEach(model => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-900/30 text-zinc-300";
+                const statusButton = model.enabled 
+                    ? `<button onclick="toggleModelStatus('${model.id}', false)" class="px-2 py-0.5 rounded bg-emerald-950 text-[9px] text-emerald-400 border border-emerald-800 font-bold">ENABLED</button>`
+                    : `<button onclick="toggleModelStatus('${model.id}', true)" class="px-2 py-0.5 rounded bg-zinc-900 text-[9px] text-zinc-500 border border-zinc-800 font-bold">DISABLED</button>`;
+
+                tr.innerHTML = `
+                    <td class="p-2.5 pl-3 font-mono text-[10px] text-cyan-400 font-bold uppercase">${model.provider}</td>
+                    <td class="p-2.5 font-medium">
+                        <span class="text-zinc-200 block ${!model.enabled ? 'line-through text-zinc-600' : ''}">${model.name}</span>
+                        <span class="text-[9px] text-zinc-500 font-mono block">${model.target}</span>
+                    </td>
+                    <td class="p-2.5 text-center">${statusButton}</td>
+                    <td class="p-2.5 text-right pr-3">
+                        <button onclick="deleteModelNodeFromStack('${model.id}')" class="text-red-500 hover:text-red-400 font-medium text-[11px]">✕ Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleModelStatus(id, state) {
+            const model = masterStore.models.find(m => m.id === id);
+            if (model) {
+                model.enabled = state;
+                if (!state && masterStore.activeModelId === id) {
+                    const firstActive = masterStore.models.find(m => m.enabled);
+                    if (firstActive) masterStore.activeModelId = firstActive.id;
+                }
+                renderAdminModelsTable();
+                rebuildMainSidebarSelectDropdown();
+                localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            }
+        }
+
+        function rebuildMainSidebarSelectDropdown() {
+            const selector = document.getElementById('user-model-selector');
+            if (!selector) return;
+            selector.innerHTML = '';
+            
+            const activeModels = masterStore.models.filter(m => m.enabled);
+            if (activeModels.length === 0) {
+                // Fallback inside selector if everything is disabled
+                const opt = document.createElement('option');
+                opt.text = "No models active";
+                selector.appendChild(opt);
+                return;
+            }
+
+            activeModels.forEach(model => {
+                const opt = document.createElement('option');
+                opt.value = model.id;
+                opt.className = "bg-[#09090b] text-zinc-200 text-xs";
+                opt.innerText = `${model.provider.toUpperCase()} : ${model.name}`;
+                if(model.id === masterStore.activeModelId) opt.selected = true;
+                selector.appendChild(opt);
+            });
+        }
+
+        function injectModelNode(providerType, nameInputId, targetInputId, rulesInputId) {
+            let name = document.getElementById(nameInputId).value.trim();
+            let target = document.getElementById(targetInputId).value.trim();
+            const rules = document.getElementById(rulesInputId).value.trim();
+
+            if(!target) {
+                alert("Validation Exception: Target identity cannot be blank.");
+                return;
+            }
+
+            if (target.includes("huggingface.co")) {
+                try {
+                    let cleanedPath = target.replace(/\/$/, "");
+                    const urlObj = new URL(cleanedPath.startsWith("http") ? cleanedPath : "https://" + cleanedPath);
+                    let segments = urlObj.pathname.split('/').filter(p => p);
+                    if (segments[0] === 'models') segments.shift();
+                    if (segments.length >= 2) {
+                        target = `${segments[0]}/${segments[1]}`;
+                    }
+                } catch(e) {}
+            }
+
+            if (!name) name = `✨ ${target.split('/').pop()}`;
+
+            masterStore.models.push({ id: 'm-' + Date.now(), provider: providerType, name: name, target: target, rules: rules, enabled: true });
+            document.getElementById(nameInputId).value = '';
+            document.getElementById(targetInputId).value = '';
+            document.getElementById(rulesInputId).value = '';
+
+            renderAdminModelsTable();
+            rebuildMainSidebarSelectDropdown();
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+        }
+
+        function deleteModelNodeFromStack(id) {
+            masterStore.models = masterStore.models.filter(m => m.id !== id);
+            if (masterStore.activeModelId === id) {
+                const fallback = masterStore.models.find(m => m.enabled);
+                if (fallback) masterStore.activeModelId = fallback.id;
+            }
+            renderAdminModelsTable();
+            rebuildMainSidebarSelectDropdown();
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+        }
+
+        function changeUserActiveModel() {
+            masterStore.activeModelId = document.getElementById('user-model-selector').value;
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            rebuildMainSidebarSelectDropdown();
+        }
+
+        function commitMasterOverhaulSettings() {
+            masterStore.globalRules = document.getElementById('global-system-rules').value.trim();
+            masterStore.keys.huggingface = document.getElementById('key-huggingface').value.trim();
+            localStorage.setItem('aether_v3.0_enterprise_cache', JSON.stringify(masterStore));
+            rebuildMainSidebarSelectDropdown();
+            toggleModal('settings-modal', false);
+            alert("Configuration synced successfully.");
+        }
+
+        function toggleSidebar() {
+            const el = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (el.classList.contains('-translate-x-full')) {
+                el.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                el.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function toggleModal(id, show) {
+            const modal = document.getElementById(id);
+            if(modal) {
+                modal.style.setProperty('display', show ? 'flex' : 'none', 'important');
+            }
+        }
+
+        function purgeSystemCacheRegistry() {
+            if(confirm("Flush storage architecture?")) {
+                localStorage.removeItem('aether_v3.0_enterprise_cache');
+                location.reload();
+            }
+        }
+
+        function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const streamArea = document.getElementById('chat-stream');
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            if (text.toLowerCase() === COMMAND_KEY_SEQUENCE.toLowerCase()) {
+                inputField.value = '';
+                let pass = prompt("🔒 Enter Access Key:");
+                if (pass === SYSTEM_PASSWORD_SIGNATURE) {
+                    syncAllDataToUINodes();
+                    toggleModal('settings-modal', true);
+                }
+                return;
+            }
+
+            if(streamArea.querySelector('.text-center')) streamArea.innerHTML = '';
+            
+            streamArea.innerHTML += `
+                <div class="flex justify-end mb-4">
+                    <div class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-xs max-w-[85%] text-zinc-100 leading-relaxed shadow-sm">${text}</div>
+                </div>
+            `;
+            inputField.value = '';
+            streamArea.scrollTop = streamArea.scrollHeight;
+
+            const assistantId = 'ai-' + Date.now();
+            streamArea.innerHTML += `
+                <div class="flex gap-3 mt-4">
+                    <div class="w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 text-[10px]">🤖</div>
+                    <div id="${assistantId}" class="p-0.5 text-xs text-zinc-400 w-full animate-pulse">Running secure gateway stream...</div>
+                </div>
+            `;
+            streamArea.scrollTop = streamArea.scrollHeight;
+
+            const activeModelObj = masterStore.models.find(m => m.id === masterStore.activeModelId) || masterStore.models[0];
+            if(!activeModelObj) {
+                document.getElementById(assistantId).innerHTML = "❌ No model selected.";
+                return;
+            }
+
+            let rawTarget = activeModelObj.target.trim();
+            if (rawTarget.includes("huggingface.co")) {
+                try {
+                    let cleaned = rawTarget.replace(/\/$/, "");
+                    let urlObj = new URL(cleaned.startsWith("http") ? cleaned : "https://" + cleaned);
+                    let paths = urlObj.pathname.split('/').filter(p => p);
+                    if (paths[0] === 'models') paths.shift();
+                    if (paths.length >= 2) rawTarget = `${paths[0]}/${paths[1]}`;
+                } catch(e) {}
+            }
+
+            const currentKey = masterStore.keys.huggingface;
+            const ruleInUse = activeModelObj.rules ? activeModelObj.rules : masterStore.globalRules;
+            const targetBox = document.getElementById(assistantId);
+
+            fetch(`https://api-inference.huggingface.co/models/${rawTarget}?t=${Date.now()}`, {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${currentKey}`, 
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ 
+                    inputs: `<|system|>\n${ruleInUse}</s>\n<|user|>\n${text}</s>\n<|assistant|>\n`,
+                    parameters: { max_new_tokens: 512, return_full_text: false }
+                })
+            })
+            .then(async (res) => {
+                const isJson = res.headers.get('content-type')?.includes('application/json');
+                const errData = isJson ? await res.json().catch(() => ({})) : {};
+
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        throw new Error("401: Token invalid hai ya read permissions missings hain.");
+                    }
+                    if (res.status === 404) {
+                        throw new Error(`404: Model '${rawTarget}' Serverless API par up nahi hai.`);
+                    }
+                    if (errData.error && errData.error.includes("is currently loading")) {
+                        targetBox.innerHTML = `⏳ <b>Model waking up...</b> Server load ho raha hai. Retrying in 8s...`;
+                        setTimeout(sendMessage, 8000); 
+                        return null;
+                    }
+                    throw new Error(errData.error || `HTTP Status ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (!data) return;
+                targetBox.classList.remove('animate-pulse', 'text-zinc-400');
+                targetBox.classList.add('text-zinc-200');
+                
+                let reply = (Array.isArray(data) && data[0].generated_text) ? data[0].generated_text : (data.generated_text || JSON.stringify(data));
+                targetBox.innerText = reply;
+                streamArea.scrollTop = streamArea.scrollHeight;
+            })
+            .catch(err => { 
+                targetBox.classList.remove('animate-pulse');
+                targetBox.innerHTML = `❌ <b>Gateway Error:</b> ${err.message}<br><br><span class='text-[10px] text-zinc-500'>Target URL: https://api-inference.huggingface.co/models/${rawTarget}</span>`; 
+                streamArea.scrollTop = streamArea.scrollHeight;
+            });
+        }
+
+        function createNewChat() {
+            document.getElementById('chat-stream').innerHTML = `
+                <div class="max-w-xl mx-auto text-center my-auto space-y-3 py-8">
+                    <div class="text-2xl">✨</div>
+                    <h2 class="text-base font-bold text-zinc-100 tracking-tight">New Session Canvas.</h2>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
