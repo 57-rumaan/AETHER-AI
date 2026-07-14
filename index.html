@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AETHER AI — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0D12;--surface:#14161D;--raised:#1B1E27;--border:#262A35;
+    --accent:#6C8EF5;--warm:#E8A253;--text:#EDEFF3;--muted:#8891A3;
+    --font-d:'Space Grotesk',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;}
+  .login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  }
+  .login-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:32px;width:320px;display:flex;flex-direction:column;gap:14px;
+  }
+  .login-card h1{font-family:var(--font-d);font-size:19px;}
+  .login-card p{color:var(--muted);font-size:12.5px;line-height:1.5;}
+  input{
+    background:var(--bg);border:1px solid var(--border);border-radius:9px;
+    padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;
+  }
+  input:focus{border-color:var(--accent);}
+  button.primary{
+    background:var(--accent);color:#0B0D12;border:none;border-radius:9px;
+    padding:11px;font-weight:600;font-size:14px;
+  }
+  .error{color:#ff6b6b;font-size:12.5px;display:none;}
+
+  .dash{display:none;}
+  .dash.active{display:flex;}
+  .dash{min-height:100vh;}
+  .side{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;}
+  .side h2{font-family:var(--font-d);font-size:15px;margin-bottom:18px;}
+  .side button{
+    display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--muted);
+    padding:9px 10px;border-radius:8px;font-size:13.5px;margin-bottom:2px;
+  }
+  .side button:hover,.side button.active{background:var(--raised);color:var(--text);}
+  .content{flex:1;padding:26px 32px;overflow-y:auto;}
+  .content h2{font-family:var(--font-d);font-size:20px;margin-bottom:6px;}
+  .content .sub{color:var(--muted);font-size:13px;margin-bottom:22px;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
+  .provider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .provider-row h3{font-size:14.5px;}
+  .provider-row .env{font-family:var(--font-m);font-size:11px;color:var(--warm);}
+  .model-row{
+    display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);
+  }
+  .model-row input[type=text]{flex:1;padding:7px 10px;font-size:13px;}
+  .toggle{width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;cursor:pointer;flex-shrink:0;}
+  .toggle.on{background:var(--accent);}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;}
+  .toggle.on::after{left:18px;}
+  textarea{
+    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);font-family:inherit;font-size:13.5px;padding:10px;min-height:80px;resize:vertical;
+  }
+  .save-btn{margin-top:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;}
+  .save-btn:hover{border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <h1>Admin access</h1>
+    <p>This panel is separate from the chat app and isn't linked from it. Only reachable by URL, and every load still requires the real admin password.</p>
+    <input type="password" id="pw" placeholder="Admin password">
+    <button class="primary" id="loginBtn">Enter</button>
+    <div class="error" id="loginErr">Wrong password.</div>
+  </div>
+</div>
+
+<div class="dash" id="dash">
+  <div class="side">
+    <h2>AETHER AI Admin</h2>
+    <button class="active" data-tab="models">Add / manage APIs</button>
+    <button data-tab="rules">Global rules</button>
+    <button data-tab="users">Users & usage</button>
+  </div>
+  <div class="content">
+    <div id="tab-models">
+      <h2>Providers & models</h2>
+      <div class="sub">Each provider's API key comes from your server's .env file — never typed in here, never stored in this page.</div>
+      <div id="providerList"></div>
+    </div>
+    <div id="tab-rules" style="display:none">
+      <h2>Global rules</h2>
+      <div class="sub">Applies to every model unless a model has its own rule set below it.</div>
+      <div class="card">
+        <textarea id="globalRules" placeholder="e.g. Never reveal API keys. Keep replies under 200 words unless asked for more."></textarea>
+        <button class="save-btn" id="saveRules">Save</button>
+      </div>
+    </div>
+    <div id="tab-users" style="display:none">
+      <h2>Users & usage</h2>
+      <div class="sub">Signups, login history, per-user chat volume. Connect a real database to populate this.</div>
+      <div class="card" id="usersBox">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const loginScreen = document.getElementById('loginScreen');
+const dash = document.getElementById('dash');
+
+document.getElementById('loginBtn').onclick = async () => {
+  const password = document.getElementById('pw').value;
+  const res = await fetch('/api/admin/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ password })
+  });
+  if (res.ok) {
+    loginScreen.style.display = 'none';
+    dash.classList.add('active');
+    dash.style.display = 'flex';
+    loadModels();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+};
+
+document.querySelectorAll('.side button[data-tab]').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.side button[data-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['models','rules','users'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = (t === btn.dataset.tab) ? 'block' : 'none';
+    });
+    if (btn.dataset.tab === 'users') loadUsers();
+  };
+});
+
+let modelConfig = null;
+
+async function loadModels(){
+  const res = await fetch('/api/admin/models');
+  modelConfig = await res.json();
+  document.getElementById('globalRules').value = modelConfig.globalRules || '';
+  renderProviders();
+}
+
+function renderProviders(){
+  const list = document.getElementById('providerList');
+  list.innerHTML = '';
+  modelConfig.providers.forEach((provider) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="provider-row">
+        <h3>${provider.label}</h3>
+        <span class="env">${provider.apiKeyEnv}</span>
+      </div>
+      <div class="models-container"></div>
+    `;
+    const modelsContainer = card.querySelector('.models-container');
+    provider.models.forEach((model) => {
+      const row = document.createElement('div');
+      row.className = 'model-row';
+      row.innerHTML = `
+        <div class="toggle ${model.enabled ? 'on' : ''}"></div>
+        <input type="text" value="${model.customName}" data-field="customName">
+        <span style="font-family:var(--font-m);font-size:11px;color:var(--muted)">${model.id}</span>
+      `;
+      row.querySelector('.toggle').onclick = (e) => {
+        model.enabled = !model.enabled;
+        e.target.classList.toggle('on');
+      };
+      row.querySelector('input').oninput = (e) => { model.customName = e.target.value; };
+      modelsContainer.appendChild(row);
+    });
+    list.appendChild(card);
+  });
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'save-btn';
+  saveBtn.textContent = 'Save changes';
+  saveBtn.onclick = async () => {
+    await fetch('/api/admin/models', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(modelConfig)
+    });
+    saveBtn.textContent = 'Saved ✓';
+    setTimeout(() => saveBtn.textContent = 'Save changes', 1200);
+  };
+  list.appendChild(saveBtn);
+}
+
+document.getElementById('saveRules').onclick = async () => {
+  await fetch('/api/admin/rules', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ globalRules: document.getElementById('globalRules').value })
+  });
+};
+
+async function loadUsers(){
+  const res = await fetch('/api/admin/users');
+  const data = await res.json();
+  document.getElementById('usersBox').textContent = data.note || JSON.stringify(data);
+}
+</script>
+</body>
+</html>
