@@ -1,1 +1,32 @@
-
+{
+  "_comment": "Admin panel reads/writes this file. Each provider holds an API key (from env, never plaintext here) and a list of models with custom names + rules + enabled flag.",
+  "providers": [
+    {
+      "id": "openai",
+      "label": "OpenAI",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "customName": "Fast Writer",
+          "enabled": true,
+          "rules": "Keep answers concise. Never discuss pricing."
+        }
+      ]
+    },
+    {
+      "id": "google",
+      "label": "Google Gemini",
+      "apiKeyEnv": "GEMINI_API_KEY",
+      "models": [
+        {
+          "id": "gemini-2.0-flash",
+          "customName": "Vision Helper",
+          "enabled": false,
+          "rules": ""
+        }
+      ]
+    }
+  ],
+  "globalRules": "Default behavior for the whole AI when no model-specific rule applies."
+}
