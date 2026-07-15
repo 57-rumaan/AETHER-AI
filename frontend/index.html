@@ -45,6 +45,8 @@
     display:flex;
     flex-direction:column;
     transition:margin-left .22s ease;
+    position:relative;
+    z-index:10;
   }
   .sidebar.collapsed{margin-left:-280px;}
   .sidebar-top{
@@ -122,16 +124,42 @@
     padding:0 18px;border-bottom:1px solid var(--border);
     flex-shrink:0;
   }
+  .model-picker-wrap{position:relative;}
   .model-picker{
     display:flex;align-items:center;gap:8px;
     padding:7px 12px;border-radius:9px;border:1px solid var(--border);
     background:var(--surface-raised);font-size:13px;font-weight:500;
+    border:none;color:var(--text-primary);
   }
   .model-picker:hover{background:var(--surface-hover);}
   .model-picker .badge{
     font-family:var(--font-mono);font-size:10.5px;color:var(--accent);
     background:rgba(108,142,245,.12);padding:2px 6px;border-radius:5px;letter-spacing:.3px;
   }
+  .model-dropdown{
+    position:absolute;top:44px;left:0;
+    background:var(--surface-raised);border:1px solid var(--border);
+    border-radius:12px;padding:6px;width:220px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+    display:none;flex-direction:column;gap:2px;z-index:20;
+  }
+  .model-dropdown.open{display:flex;}
+  .model-dropdown button{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 10px;border:none;background:transparent;border-radius:8px;
+    color:var(--text-primary);font-size:13.5px;text-align:left;width:100%;
+  }
+  .model-dropdown button:hover{background:var(--surface-hover);}
+  .model-dropdown button .tag{
+    font-family:var(--font-mono);font-size:10px;color:var(--text-faint);
+  }
+
+  /* ---------- Sidebar overlay (mobile-friendly close) ---------- */
+  .sidebar-overlay{
+    display:none;
+    position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:5;
+  }
+  .sidebar-overlay.show{display:block;}
 
   .chat-area{
     flex:1;overflow-y:auto;
@@ -227,7 +255,8 @@
 </head>
 <body>
 
-<aside class="sidebar" id="sidebar">
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar collapsed" id="sidebar">
   <div class="sidebar-top">
     <div class="brand"><span class="dot"></span>AETHER AI</div>
     <button class="icon-btn" id="collapseBtn" title="Collapse">
@@ -261,13 +290,21 @@
 
 <main class="main">
   <div class="topbar">
-    <button class="icon-btn" id="expandBtn" style="display:none" title="Expand sidebar">
+    <button class="icon-btn" id="expandBtn" title="Expand sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <div class="model-picker">
-      <span>Model</span>
-      <span class="badge">auto-route</span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="model-picker-wrap">
+      <button class="model-picker" id="modelPickerBtn">
+        <span>Model</span>
+        <span class="badge" id="modelBadge">auto-route</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="model-dropdown" id="modelDropdown">
+        <button data-model="auto-route">Auto-route <span class="tag">recommended</span></button>
+        <button data-model="gpt-4o">GPT-4o <span class="tag">OpenAI</span></button>
+        <button data-model="gemini">Gemini <span class="tag">Google</span></button>
+        <button data-model="claude">Claude <span class="tag">Anthropic</span></button>
+      </div>
     </div>
   </div>
 
@@ -315,14 +352,40 @@
 
 <script>
 const sidebar = document.getElementById('sidebar');
-document.getElementById('collapseBtn').onclick = () => {
+const expandBtn = document.getElementById('expandBtn');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+function closeSidebar(){
   sidebar.classList.add('collapsed');
-  document.getElementById('expandBtn').style.display = 'flex';
-};
-document.getElementById('expandBtn').onclick = () => {
+  sidebarOverlay.classList.remove('show');
+}
+function openSidebar(){
   sidebar.classList.remove('collapsed');
-  document.getElementById('expandBtn').style.display = 'none';
-};
+  sidebarOverlay.classList.add('show');
+}
+
+document.getElementById('collapseBtn').onclick = (e) => { e.stopPropagation(); closeSidebar(); };
+expandBtn.onclick = (e) => { e.stopPropagation(); openSidebar(); };
+
+// Clicking anywhere on the right/overlay side closes the menu — no need to hit the hamburger again.
+sidebarOverlay.addEventListener('click', closeSidebar);
+document.querySelector('.main').addEventListener('click', () => {
+  if (!sidebar.classList.contains('collapsed')) closeSidebar();
+});
+
+const modelPickerBtn = document.getElementById('modelPickerBtn');
+const modelDropdown = document.getElementById('modelDropdown');
+const modelBadge = document.getElementById('modelBadge');
+
+modelPickerBtn.onclick = (e) => { e.stopPropagation(); modelDropdown.classList.toggle('open'); };
+modelDropdown.querySelectorAll('button').forEach(btn => {
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    modelBadge.textContent = btn.dataset.model;
+    modelDropdown.classList.remove('open');
+  };
+});
+document.addEventListener('click', () => modelDropdown.classList.remove('open'));
 
 const plusBtn = document.getElementById('plusBtn');
 const plusMenu = document.getElementById('plusMenu');
