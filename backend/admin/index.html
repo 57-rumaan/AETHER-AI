@@ -34,27 +34,59 @@
   .error{color:#ff6b6b;font-size:12.5px;display:none;}
 
   .dash{display:none;}
-  .dash.active{display:flex;}
-  .dash{min-height:100vh;}
-  .side{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;}
-  .side h2{font-family:var(--font-d);font-size:15px;margin-bottom:18px;}
-  .side button{
+  .dash.active{display:block;}
+
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    height:56px;padding:0 16px;border-bottom:1px solid var(--border);
+    background:var(--surface);position:sticky;top:0;z-index:20;
+  }
+  .hamburger{
+    width:36px;height:36px;border-radius:9px;border:none;background:transparent;
+    display:flex;align-items:center;justify-content:center;color:var(--text);flex-shrink:0;
+  }
+  .hamburger:hover{background:var(--raised);}
+  .topbar h2{font-family:var(--font-d);font-size:16px;}
+
+  .side{
+    position:fixed;top:0;left:0;bottom:0;width:250px;
+    background:var(--surface);border-right:1px solid var(--border);
+    padding:20px 14px;z-index:40;
+    transform:translateX(-100%);transition:transform .22s ease;
+  }
+  .side.open{transform:translateX(0);}
+  .side-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .side h2{font-family:var(--font-d);font-size:15px;}
+  .side button.close-btn{
+    width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--muted);
+  }
+  .side button.close-btn:hover{background:var(--raised);}
+  .side .nav-btn{
     display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--muted);
     padding:9px 10px;border-radius:8px;font-size:13.5px;margin-bottom:2px;
   }
-  .side button:hover,.side button.active{background:var(--raised);color:var(--text);}
-  .content{flex:1;padding:26px 32px;overflow-y:auto;}
+  .side .nav-btn:hover,.side .nav-btn.active{background:var(--raised);color:var(--text);}
+
+  .backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+  }
+  .backdrop.open{opacity:1;pointer-events:auto;}
+
+  .content{padding:26px 20px;max-width:720px;margin:0 auto;}
   .content h2{font-family:var(--font-d);font-size:20px;margin-bottom:6px;}
   .content .sub{color:var(--muted);font-size:13px;margin-bottom:22px;}
 
   .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
-  .provider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .provider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;}
   .provider-row h3{font-size:14.5px;}
   .provider-row .env{font-family:var(--font-m);font-size:11px;color:var(--warm);}
+  .remove-btn{background:transparent;border:none;color:#ff6b6b;font-size:12px;padding:4px 8px;border-radius:6px;flex-shrink:0;}
+  .remove-btn:hover{background:rgba(255,107,107,.1);}
   .model-row{
     display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);
   }
-  .model-row input[type=text]{flex:1;padding:7px 10px;font-size:13px;}
+  .model-row input[type=text]{flex:1;padding:7px 10px;font-size:13px;min-width:0;}
   .toggle{width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;cursor:pointer;flex-shrink:0;}
   .toggle.on{background:var(--accent);}
   .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;}
@@ -65,6 +97,31 @@
   }
   .save-btn{margin-top:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;}
   .save-btn:hover{border-color:var(--accent);}
+  .add-btn{
+    width:100%;background:var(--raised);border:1px dashed var(--border);color:var(--muted);
+    padding:12px;border-radius:10px;font-size:13.5px;margin-bottom:14px;
+  }
+  .add-btn:hover{border-color:var(--accent);color:var(--text);}
+  .add-model-btn{
+    margin-top:9px;background:transparent;border:1px dashed var(--border);color:var(--muted);
+    padding:7px 10px;border-radius:8px;font-size:12.5px;width:100%;
+  }
+  .add-model-btn:hover{border-color:var(--accent);color:var(--text);}
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;
+  }
+  .modal h3{font-family:var(--font-d);font-size:15px;margin-bottom:4px;}
+  .modal label{font-size:12px;color:var(--muted);margin-bottom:-4px;}
+  .modal-actions{display:flex;gap:8px;margin-top:6px;}
+  .modal-actions button{flex:1;padding:9px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:var(--raised);color:var(--text);}
+  .modal-actions button.primary{background:var(--accent);color:#0B0D12;border:none;}
 </style>
 </head>
 <body>
@@ -80,16 +137,32 @@
 </div>
 
 <div class="dash" id="dash">
-  <div class="side">
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <h2>AETHER AI Admin</h2>
-    <button class="active" data-tab="models">Add / manage APIs</button>
-    <button data-tab="rules">Global rules</button>
-    <button data-tab="users">Users & usage</button>
   </div>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <div class="side" id="side">
+    <div class="side-header">
+      <h2>Menu</h2>
+      <button class="close-btn" id="closeSideBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <button class="nav-btn active" data-tab="models">Add / manage APIs</button>
+    <button class="nav-btn" data-tab="rules">Global rules</button>
+    <button class="nav-btn" data-tab="users">Users & usage</button>
+  </div>
+
   <div class="content">
     <div id="tab-models">
       <h2>Providers & models</h2>
-      <div class="sub">Each provider's API key comes from your server's .env file — never typed in here, never stored in this page.</div>
+      <div class="sub">Each provider's API key comes from your server's environment variables — never typed in here, never stored in this page.</div>
+      <button class="add-btn" id="addProviderBtn">+ Add a new API / provider</button>
       <div id="providerList"></div>
     </div>
     <div id="tab-rules" style="display:none">
@@ -108,6 +181,34 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="providerModal">
+  <div class="modal">
+    <h3>Add a new API / provider</h3>
+    <label>Provider name (shown to you)</label>
+    <input type="text" id="newProviderLabel" placeholder="e.g. Anthropic, Mistral, ElevenLabs">
+    <label>Environment variable name (holds the API key on your server)</label>
+    <input type="text" id="newProviderEnv" placeholder="e.g. ANTHROPIC_API_KEY">
+    <div class="modal-actions">
+      <button id="cancelProviderBtn">Cancel</button>
+      <button class="primary" id="confirmProviderBtn">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modelModal">
+  <div class="modal">
+    <h3>Add a model</h3>
+    <label>Model ID (as the provider's API expects it)</label>
+    <input type="text" id="newModelId" placeholder="e.g. gpt-4o-mini">
+    <label>Custom name (shown in your app)</label>
+    <input type="text" id="newModelName" placeholder="e.g. Quick Replies">
+    <div class="modal-actions">
+      <button id="cancelModelBtn">Cancel</button>
+      <button class="primary" id="confirmModelBtn">Add</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const loginScreen = document.getElementById('loginScreen');
 const dash = document.getElementById('dash');
@@ -121,21 +222,29 @@ document.getElementById('loginBtn').onclick = async () => {
   if (res.ok) {
     loginScreen.style.display = 'none';
     dash.classList.add('active');
-    dash.style.display = 'flex';
     loadModels();
   } else {
     document.getElementById('loginErr').style.display = 'block';
   }
 };
 
-document.querySelectorAll('.side button[data-tab]').forEach(btn => {
+const side = document.getElementById('side');
+const backdrop = document.getElementById('backdrop');
+function openSide(){ side.classList.add('open'); backdrop.classList.add('open'); }
+function closeSide(){ side.classList.remove('open'); backdrop.classList.remove('open'); }
+document.getElementById('hamburgerBtn').onclick = openSide;
+document.getElementById('closeSideBtn').onclick = closeSide;
+backdrop.onclick = closeSide;
+
+document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
   btn.onclick = () => {
-    document.querySelectorAll('.side button[data-tab]').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.nav-btn[data-tab]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     ['models','rules','users'].forEach(t => {
       document.getElementById('tab-' + t).style.display = (t === btn.dataset.tab) ? 'block' : 'none';
     });
     if (btn.dataset.tab === 'users') loadUsers();
+    closeSide();
   };
 });
 
@@ -151,15 +260,19 @@ async function loadModels(){
 function renderProviders(){
   const list = document.getElementById('providerList');
   list.innerHTML = '';
-  modelConfig.providers.forEach((provider) => {
+  modelConfig.providers.forEach((provider, pIndex) => {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
       <div class="provider-row">
-        <h3>${provider.label}</h3>
-        <span class="env">${provider.apiKeyEnv}</span>
+        <div>
+          <h3>${provider.label}</h3>
+          <span class="env">${provider.apiKeyEnv}</span>
+        </div>
+        <button class="remove-btn" data-remove-provider="${pIndex}">Remove</button>
       </div>
       <div class="models-container"></div>
+      <button class="add-model-btn" data-add-model="${pIndex}">+ Add a model to ${provider.label}</button>
     `;
     const modelsContainer = card.querySelector('.models-container');
     provider.models.forEach((model) => {
@@ -172,12 +285,22 @@ function renderProviders(){
       `;
       row.querySelector('.toggle').onclick = (e) => {
         model.enabled = !model.enabled;
-        e.target.classList.toggle('on');
+        e.currentTarget.classList.toggle('on');
       };
       row.querySelector('input').oninput = (e) => { model.customName = e.target.value; };
       modelsContainer.appendChild(row);
     });
     list.appendChild(card);
+  });
+
+  list.querySelectorAll('[data-remove-provider]').forEach(btn => {
+    btn.onclick = () => {
+      modelConfig.providers.splice(Number(btn.dataset.removeProvider), 1);
+      renderProviders();
+    };
+  });
+  list.querySelectorAll('[data-add-model]').forEach(btn => {
+    btn.onclick = () => openModelModal(Number(btn.dataset.addModel));
   });
 
   const saveBtn = document.createElement('button');
@@ -193,6 +316,40 @@ function renderProviders(){
   };
   list.appendChild(saveBtn);
 }
+
+const providerModal = document.getElementById('providerModal');
+document.getElementById('addProviderBtn').onclick = () => {
+  document.getElementById('newProviderLabel').value = '';
+  document.getElementById('newProviderEnv').value = '';
+  providerModal.classList.add('open');
+};
+document.getElementById('cancelProviderBtn').onclick = () => providerModal.classList.remove('open');
+document.getElementById('confirmProviderBtn').onclick = () => {
+  const label = document.getElementById('newProviderLabel').value.trim();
+  const apiKeyEnv = document.getElementById('newProviderEnv').value.trim();
+  if (!label || !apiKeyEnv) return;
+  modelConfig.providers.push({ id: label.toLowerCase().replace(/\s+/g,'-'), label, apiKeyEnv, models: [] });
+  providerModal.classList.remove('open');
+  renderProviders();
+};
+
+const modelModal = document.getElementById('modelModal');
+let modelTargetProviderIndex = null;
+function openModelModal(pIndex){
+  modelTargetProviderIndex = pIndex;
+  document.getElementById('newModelId').value = '';
+  document.getElementById('newModelName').value = '';
+  modelModal.classList.add('open');
+}
+document.getElementById('cancelModelBtn').onclick = () => modelModal.classList.remove('open');
+document.getElementById('confirmModelBtn').onclick = () => {
+  const id = document.getElementById('newModelId').value.trim();
+  const customName = document.getElementById('newModelName').value.trim() || id;
+  if (!id || modelTargetProviderIndex === null) return;
+  modelConfig.providers[modelTargetProviderIndex].models.push({ id, customName, enabled: false, rules: '' });
+  modelModal.classList.remove('open');
+  renderProviders();
+};
 
 document.getElementById('saveRules').onclick = async () => {
   await fetch('/api/admin/rules', {
