@@ -8,6 +8,22 @@ function loadModelConfig() {
   return JSON.parse(raw);
 }
 
+// GET /api/chat/models — public list of enabled models for the chat UI.
+// Only sends what the frontend actually needs (id, provider, display name).
+// Never sends API keys or per-model rules — those stay server-side only.
+router.get('/models', (req, res) => {
+  const config = loadModelConfig();
+  const list = [];
+  for (const provider of config.providers) {
+    for (const model of provider.models) {
+      if (model.enabled) {
+        list.push({ id: model.id, providerId: provider.id, name: model.customName });
+      }
+    }
+  }
+  res.json({ models: list });
+});
+
 // POST /api/chat  { message, modelId? }
 // The frontend NEVER sees or sends API keys. Keys live only in backend env vars.
 router.post('/', async (req, res) => {
