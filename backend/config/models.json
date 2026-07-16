@@ -9,24 +9,24 @@
         {
           "id": "gpt-4o",
           "customName": "Fast Writer",
-          "enabled": true,
-          "rules": "Keep answers concise. Never discuss pricing."
+          "enabled": false,
+          "rules": ""
         }
       ]
     },
     {
-      "id": "google",
-      "label": "Google Gemini",
-      "apiKeyEnv": "GEMINI_API_KEY",
+      "id": "hugging-face",
+      "label": "Hugging Face",
+      "apiKeyEnv": "HUGGINGFACE_API_KEY",
       "models": [
         {
-          "id": "gemini-2.0-flash",
-          "customName": "Vision Helper",
-          "enabled": false,
+          "id": "meta-llama/Llama-3.1-8B-Instruct",
+          "customName": "AETHER V1",
+          "enabled": true,
           "rules": ""
         }
       ]
     }
   ],
-  "globalRules": "Default behavior for the whole AI when no model-specific rule applies."
+  "globalRules": ""
 }
