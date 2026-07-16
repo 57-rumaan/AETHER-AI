@@ -2,8 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { loadModelConfig } = require('../config/store');
 
-// GET /api/chat/models — public list of enabled models for the picker dropdown.
-// Only sends id + customName, never API keys.
 router.get('/models', async (req, res) => {
   try {
     const config = await loadModelConfig();
@@ -20,11 +18,9 @@ router.get('/models', async (req, res) => {
   }
 });
 
-// POST /api/chat  { message, modelId? }
-// The frontend NEVER sees or sends API keys. Keys live only in backend env vars.
 router.post('/', async (req, res) => {
-  const { message, modelId } = req.body;
-  if (!message) return res.status(400).json({ error: 'message is required' });
+  const { message, modelId, imageDataUrl } = req.body;
+  if (!message && !imageDataUrl) return res.status(400).json({ error: 'message is required' });
 
   let config;
   try {
@@ -54,7 +50,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const reply = await callProvider(target.provider.id, apiKey, target.model.id, message, target.model.rules, config.globalRules);
+    const reply = await callProvider(target.provider.id, apiKey, target.model.id, message, imageDataUrl, target.model.rules, config.globalRules);
     res.json({ reply, model: target.model.customName });
   } catch (err) {
     console.error(err);
@@ -62,7 +58,15 @@ router.post('/', async (req, res) => {
   }
 });
 
-async function callProvider(providerId, apiKey, modelId, message, modelRules, globalRules) {
+function buildUserContent(message, imageDataUrl) {
+  if (!imageDataUrl) return message || '';
+  return [
+    { type: 'text', text: message || 'Describe this image.' },
+    { type: 'image_url', image_url: { url: imageDataUrl } }
+  ];
+}
+
+async function callProvider(providerId, apiKey, modelId, message, imageDataUrl, modelRules, globalRules) {
   const systemPrompt = [globalRules, modelRules].filter(Boolean).join('\n');
 
   if (providerId === 'openai') {
@@ -73,7 +77,7 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
         model: modelId,
         messages: [
           { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
-          { role: 'user', content: message }
+          { role: 'user', content: buildUserContent(message, imageDataUrl) }
         ]
       })
     });
@@ -82,10 +86,15 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
   }
 
   if (providerId === 'google') {
+    const parts = [{ text: message || 'Describe this image.' }];
+    if (imageDataUrl) {
+      const match = imageDataUrl.match(/^data:(.+);base64,(.+)$/);
+      if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+    }
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
+      body: JSON.stringify({ contents: [{ parts }] })
     });
     const data = await r.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No reply.';
@@ -97,9 +106,10 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: modelId,
+        reasoning_format: 'hidden',
         messages: [
           { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
-          { role: 'user', content: message }
+          { role: 'user', content: buildUserContent(message, imageDataUrl) }
         ]
       })
     });
@@ -120,7 +130,7 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
         model: modelId,
         messages: [
           { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
-          { role: 'user', content: message }
+          { role: 'user', content: buildUserContent(message, imageDataUrl) }
         ]
       })
     });
