@@ -30,23 +30,27 @@
     font-family:var(--font-body);
     background:var(--bg-void);
     color:var(--text-primary);
-    display:flex;
     overflow:hidden;
   }
   a{color:inherit;text-decoration:none;}
   button{font-family:inherit;cursor:pointer;}
 
-  /* ---------- Sidebar ---------- */
   .sidebar{
-    width:280px;
-    min-width:280px;
+    position:fixed;top:0;left:0;bottom:0;width:280px;
     background:var(--surface);
     border-right:1px solid var(--border);
-    display:flex;
-    flex-direction:column;
-    transition:margin-left .22s ease;
+    display:flex;flex-direction:column;
+    transform:translateX(-100%);
+    transition:transform .22s ease;
+    z-index:40;
   }
-  .sidebar.collapsed{margin-left:-280px;}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+  }
+  .sidebar-backdrop.open{opacity:1;pointer-events:auto;}
+
   .sidebar-top{
     display:flex;align-items:center;justify-content:space-between;
     padding:18px 16px 10px;
@@ -115,23 +119,38 @@
     display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
   }
 
-  /* ---------- Main ---------- */
-  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .main{display:flex;flex-direction:column;min-width:0;height:100vh;}
   .topbar{
     height:56px;display:flex;align-items:center;gap:14px;
     padding:0 18px;border-bottom:1px solid var(--border);
-    flex-shrink:0;
+    flex-shrink:0;position:relative;
   }
   .model-picker{
     display:flex;align-items:center;gap:8px;
     padding:7px 12px;border-radius:9px;border:1px solid var(--border);
     background:var(--surface-raised);font-size:13px;font-weight:500;
+    color:var(--text-primary);position:relative;
   }
   .model-picker:hover{background:var(--surface-hover);}
   .model-picker .badge{
     font-family:var(--font-mono);font-size:10.5px;color:var(--accent);
     background:rgba(108,142,245,.12);padding:2px 6px;border-radius:5px;letter-spacing:.3px;
   }
+  .model-dropdown{
+    position:absolute;top:44px;left:0;
+    background:var(--surface-raised);border:1px solid var(--border);
+    border-radius:12px;padding:6px;min-width:220px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+    display:none;flex-direction:column;gap:2px;z-index:25;max-height:280px;overflow-y:auto;
+  }
+  .model-dropdown.open{display:flex;}
+  .model-dropdown button{
+    display:block;width:100%;text-align:left;background:transparent;border:none;
+    padding:9px 10px;border-radius:8px;color:var(--text-primary);font-size:13.5px;
+  }
+  .model-dropdown button:hover{background:var(--surface-hover);}
+  .model-dropdown button.active{background:rgba(108,142,245,.15);color:var(--accent);}
+  .model-dropdown .empty{color:var(--text-faint);font-size:12.5px;padding:9px 10px;}
 
   .chat-area{
     flex:1;overflow-y:auto;
@@ -174,7 +193,6 @@
     margin-bottom:5px;letter-spacing:.3px;
   }
 
-  /* ---------- Composer ---------- */
   .composer-wrap{padding:14px 20px 20px;display:flex;justify-content:center;flex-shrink:0;}
   .composer{
     width:100%;max-width:760px;
@@ -223,46 +241,17 @@
   .composer-hint{
     text-align:center;color:var(--text-faint);font-size:11px;margin-top:10px;
   }
-
-  /* ---------- Model picker dropdown ---------- */
-  .model-picker{position:relative;border:1px solid var(--border);}
-  .model-picker-trigger{
-    display:flex;align-items:center;gap:8px;
-    background:transparent;border:none;color:var(--text-primary);
-    font-size:13px;font-weight:500;padding:0;
-  }
-  .model-dropdown{
-    position:absolute;top:calc(100% + 6px);left:0;
-    min-width:220px;
-    background:var(--surface-raised);border:1px solid var(--border);
-    border-radius:12px;padding:6px;
-    box-shadow:0 10px 30px rgba(0,0,0,.5);
-    display:none;flex-direction:column;gap:2px;
-    z-index:20;
-  }
-  .model-dropdown.open{display:flex;}
-  .model-dropdown button{
-    display:flex;flex-direction:column;align-items:flex-start;
-    padding:8px 10px;border:none;background:transparent;border-radius:8px;
-    color:var(--text-primary);font-size:13.5px;text-align:left;width:100%;
-  }
-  .model-dropdown button:hover{background:var(--surface-hover);}
-  .model-dropdown button.active{background:rgba(108,142,245,.12);}
-  .model-dropdown .model-provider{
-    font-family:var(--font-mono);font-size:10px;color:var(--text-faint);
-  }
-  .model-dropdown .empty-note{
-    padding:10px;font-size:12.5px;color:var(--text-faint);max-width:210px;line-height:1.5;
-  }
 </style>
 </head>
 <body>
 
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
     <div class="brand"><span class="dot"></span>AETHER AI</div>
-    <button class="icon-btn" id="collapseBtn" title="Collapse">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <button class="icon-btn" id="closeSidebarBtn" title="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
 
@@ -292,18 +281,14 @@
 
 <main class="main">
   <div class="topbar">
-    <button class="icon-btn" id="expandBtn" style="display:none" title="Expand sidebar">
+    <button class="icon-btn" id="hamburgerBtn" title="Menu">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <div class="model-picker">
-      <button class="model-picker-trigger" id="modelPickerBtn">
-        <span>Model</span>
-        <span class="badge" id="modelBadge">auto-route</span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="model-dropdown" id="modelDropdown">
-        <div class="empty-note">Loading models...</div>
-      </div>
+    <div class="model-picker" id="modelPicker">
+      <span id="modelPickerLabel">Model</span>
+      <span class="badge" id="modelPickerBadge">auto-route</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="model-dropdown" id="modelDropdown"></div>
     </div>
   </div>
 
@@ -351,40 +336,28 @@
 
 <script>
 const sidebar = document.getElementById('sidebar');
-document.getElementById('collapseBtn').onclick = () => {
-  sidebar.classList.add('collapsed');
-  document.getElementById('expandBtn').style.display = 'flex';
-};
-document.getElementById('expandBtn').onclick = () => {
-  sidebar.classList.remove('collapsed');
-  document.getElementById('expandBtn').style.display = 'none';
-};
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+function openSidebar(){ sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); }
+function closeSidebar(){ sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); }
+document.getElementById('hamburgerBtn').onclick = openSidebar;
+document.getElementById('closeSidebarBtn').onclick = closeSidebar;
+sidebarBackdrop.onclick = closeSidebar;
 
 const plusBtn = document.getElementById('plusBtn');
 const plusMenu = document.getElementById('plusMenu');
 plusBtn.onclick = (e) => { e.stopPropagation(); plusMenu.classList.toggle('open'); };
 document.addEventListener('click', () => plusMenu.classList.remove('open'));
 
-const input = document.getElementById('input');
-const messages = document.getElementById('messages');
-const emptyState = document.getElementById('emptyState');
-const sendBtn = document.getElementById('sendBtn');
-
-// ---------- Model picker ----------
-const modelPickerBtn = document.getElementById('modelPickerBtn');
+const modelPicker = document.getElementById('modelPicker');
 const modelDropdown = document.getElementById('modelDropdown');
-const modelBadge = document.getElementById('modelBadge');
+const modelPickerBadge = document.getElementById('modelPickerBadge');
+let selectedModelId = null;
 let availableModels = [];
-let selectedModelId = null; // null = let backend auto-route to first enabled model
 
-modelPickerBtn.onclick = (e) => { e.stopPropagation(); modelDropdown.classList.toggle('open'); };
-document.addEventListener('click', () => modelDropdown.classList.remove('open'));
-
-async function loadModels(){
+async function loadModelList(){
   try {
     const res = await fetch('/api/chat/models');
-    const data = await res.json();
-    availableModels = data.models || [];
+    availableModels = await res.json();
   } catch (err) {
     availableModels = [];
   }
@@ -393,43 +366,43 @@ async function loadModels(){
 
 function renderModelDropdown(){
   modelDropdown.innerHTML = '';
-
-  if (availableModels.length === 0) {
-    const note = document.createElement('div');
-    note.className = 'empty-note';
-    note.textContent = 'No models enabled yet. Add and enable one in the admin panel.';
-    modelDropdown.appendChild(note);
-    modelBadge.textContent = 'no models';
+  if (!availableModels.length) {
+    modelDropdown.innerHTML = '<div class="empty">No models enabled yet — add one in /admin</div>';
     return;
   }
-
   const autoBtn = document.createElement('button');
+  autoBtn.textContent = 'Auto-route (default)';
   autoBtn.className = selectedModelId === null ? 'active' : '';
-  autoBtn.innerHTML = `<span>Auto-route</span><span class="model-provider">first enabled model</span>`;
-  autoBtn.onclick = () => selectModel(null);
+  autoBtn.onclick = (e) => { e.stopPropagation(); selectModel(null, 'auto-route'); };
   modelDropdown.appendChild(autoBtn);
 
   availableModels.forEach(m => {
     const btn = document.createElement('button');
+    btn.textContent = m.customName;
     btn.className = selectedModelId === m.id ? 'active' : '';
-    btn.innerHTML = `<span>${m.name}</span><span class="model-provider">${m.providerId}</span>`;
-    btn.onclick = () => selectModel(m.id, m.name);
+    btn.onclick = (e) => { e.stopPropagation(); selectModel(m.id, m.customName); };
     modelDropdown.appendChild(btn);
   });
-
-  if (selectedModelId === null) {
-    modelBadge.textContent = 'auto-route';
-  }
 }
 
-function selectModel(id, name){
+function selectModel(id, label){
   selectedModelId = id;
-  modelBadge.textContent = name || 'auto-route';
+  modelPickerBadge.textContent = label;
   modelDropdown.classList.remove('open');
   renderModelDropdown();
 }
 
-loadModels();
+modelPicker.onclick = (e) => {
+  e.stopPropagation();
+  modelDropdown.classList.toggle('open');
+};
+document.addEventListener('click', () => modelDropdown.classList.remove('open'));
+loadModelList();
+
+const input = document.getElementById('input');
+const messages = document.getElementById('messages');
+const emptyState = document.getElementById('emptyState');
+const sendBtn = document.getElementById('sendBtn');
 
 input.addEventListener('input', () => {
   input.style.height = 'auto';
@@ -460,7 +433,6 @@ async function sendMessage(){
   addMessage('user', text);
   input.value = ''; input.style.height = 'auto';
 
-  // Calls your backend at /api/chat — backend decides which model handles it.
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -474,7 +446,6 @@ async function sendMessage(){
   }
 }
 
-// Mic button — basic Web Speech API hookup (browser-dependent)
 const micBtn = document.getElementById('micBtn');
 let recognizing = false, recognition;
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
