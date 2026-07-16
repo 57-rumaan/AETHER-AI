@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { loadModelConfig } = require('../config/store');
 
+// GET /api/chat/models — public list of enabled models for the picker dropdown.
+// Only sends id + customName, never API keys.
 router.get('/models', async (req, res) => {
   try {
     const config = await loadModelConfig();
@@ -18,6 +20,8 @@ router.get('/models', async (req, res) => {
   }
 });
 
+// POST /api/chat  { message, modelId? }
+// The frontend NEVER sees or sends API keys. Keys live only in backend env vars.
 router.post('/', async (req, res) => {
   const { message, modelId } = req.body;
   if (!message) return res.status(400).json({ error: 'message is required' });
@@ -99,7 +103,18 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
         ]
       })
     });
-    const data = await r.json();
+    const raw = await r.text();
+    if (!r.ok) {
+      console.error(`Hugging Face returned status ${r.status}:`, raw.slice(0, 500));
+      throw new Error(`Hugging Face request failed (status ${r.status})`);
+    }
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      console.error('Hugging Face returned non-JSON:', raw.slice(0, 500));
+      throw new Error('Hugging Face returned an unexpected response.');
+    }
     return data.choices?.[0]?.message?.content || 'No reply.';
   }
 
