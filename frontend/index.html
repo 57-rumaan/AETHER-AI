@@ -117,6 +117,7 @@
     width:24px;height:24px;border-radius:50%;
     background:linear-gradient(135deg,var(--accent),var(--warm));
     display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+    flex-shrink:0;
   }
 
   .main{display:flex;flex-direction:column;min-width:0;height:100vh;height:100dvh;}
@@ -184,13 +185,19 @@
   .msg.user .avatar{background:var(--surface-raised);color:var(--text-muted);}
   .msg.ai .avatar{background:linear-gradient(135deg,var(--accent),var(--warm));color:#0B0D12;}
   .msg-bubble{
-    padding:12px 15px;border-radius:14px;font-size:14.5px;line-height:1.65;
+    padding:12px 15px;border-radius:14px;font-size:14.5px;line-height:1.65;max-width:100%;
   }
   .msg.user .msg-bubble{background:var(--surface-raised);border-top-right-radius:4px;}
   .msg.ai .msg-bubble{background:transparent;border-top-left-radius:4px;padding-left:0;}
   .msg-model-tag{
     font-family:var(--font-mono);font-size:10px;color:var(--text-faint);
     margin-bottom:5px;letter-spacing:.3px;
+  }
+  .msg-bubble img.generated{
+    max-width:100%;border-radius:12px;margin-top:6px;display:block;
+  }
+  .msg-bubble img.attached-preview{
+    max-width:220px;border-radius:10px;margin-top:6px;display:block;
   }
 
   .composer-wrap{padding:14px 20px 20px;display:flex;justify-content:center;flex-shrink:0;}
@@ -203,6 +210,17 @@
     display:flex;flex-direction:column;
     box-shadow:0 8px 30px rgba(0,0,0,.35);
   }
+  .attachment-row{
+    display:none;padding:8px 10px 0;gap:8px;flex-wrap:wrap;
+  }
+  .attachment-row.show{display:flex;}
+  .attachment-chip{
+    display:flex;align-items:center;gap:6px;
+    background:var(--surface-hover);border:1px solid var(--border);border-radius:9px;
+    padding:5px 8px;font-size:12px;color:var(--text-muted);
+  }
+  .attachment-chip img{width:24px;height:24px;border-radius:5px;object-fit:cover;}
+  .attachment-chip button{background:none;border:none;color:var(--text-faint);font-size:14px;line-height:1;padding:0 2px;}
   .composer textarea{
     width:100%;background:transparent;border:none;outline:none;resize:none;
     color:var(--text-primary);font-family:inherit;font-size:14.5px;
@@ -241,6 +259,33 @@
   .composer-hint{
     text-align:center;color:var(--text-faint);font-size:11px;margin-top:10px;
   }
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:22px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;
+  }
+  .modal h3{font-family:var(--font-display);font-size:17px;margin-bottom:2px;}
+  .modal p.hint{color:var(--text-muted);font-size:12px;line-height:1.5;margin-bottom:4px;}
+  .modal input, .modal textarea{
+    background:var(--bg-void);border:1px solid var(--border);border-radius:9px;
+    padding:10px 12px;color:var(--text-primary);font-family:inherit;font-size:14px;outline:none;
+  }
+  .modal input:focus, .modal textarea:focus{border-color:var(--accent);}
+  .modal-tabs{display:flex;gap:6px;margin-bottom:6px;}
+  .modal-tabs button{
+    flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;
+    color:var(--text-muted);font-size:13px;
+  }
+  .modal-tabs button.active{background:var(--surface-raised);color:var(--text-primary);border-color:var(--accent-dim);}
+  .modal-error{color:#ff6b6b;font-size:12px;display:none;}
+  .modal-actions{display:flex;gap:8px;margin-top:6px;}
+  .modal-actions button{flex:1;padding:10px;border-radius:9px;font-size:13.5px;border:1px solid var(--border);background:var(--surface-raised);color:var(--text-primary);}
+  .modal-actions button.primary{background:var(--accent);color:#0B0D12;border:none;font-weight:600;}
 </style>
 </head>
 <body>
@@ -273,8 +318,8 @@
 
   <div class="sidebar-bottom">
     <button class="auth-btn" id="authBtn">
-      <span class="auth-avatar">?</span>
-      Log in / Sign up
+      <span class="auth-avatar" id="authAvatar">?</span>
+      <span id="authBtnLabel">Log in / Sign up</span>
     </button>
   </div>
 </aside>
@@ -286,7 +331,7 @@
     </button>
     <div class="model-picker" id="modelPicker">
       <span id="modelPickerLabel">Model</span>
-      <span class="badge" id="modelPickerBadge">auto-route</span>
+      <span class="badge" id="modelPickerBadge">no models</span>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       <div class="model-dropdown" id="modelDropdown"></div>
     </div>
@@ -295,7 +340,7 @@
   <div class="chat-area" id="chatArea">
     <div class="empty-state" id="emptyState">
       <h1>What are we building today?</h1>
-      <p>One box, every model. Text, voice, images, video — routed to whichever model does it best.</p>
+      <p>One box, every model. Text, images, files — routed to whichever model does it best.</p>
       <div class="suggestion-row">
         <div class="suggestion-chip">Generate a logo concept</div>
         <div class="suggestion-chip">Turn this note into a script</div>
@@ -307,6 +352,7 @@
 
   <div class="composer-wrap">
     <div class="composer">
+      <div class="attachment-row" id="attachmentRow"></div>
       <textarea id="input" rows="1" placeholder="Message AETHER AI..."></textarea>
       <div class="composer-row">
         <div class="plus-wrap">
@@ -314,11 +360,10 @@
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
           <div class="plus-menu" id="plusMenu">
-            <button>📎 Add files</button>
-            <button>🖼️ Add photos</button>
-            <button>📁 Add project</button>
-            <button>🎨 Generate image</button>
-            <button>🎬 Generate video</button>
+            <button id="addFileBtn">📎 Add files</button>
+            <button id="addPhotoBtn">🖼️ Add photos</button>
+            <button id="generateImageBtn">🎨 Generate image</button>
+            <button id="generateVideoBtn">🎬 Generate video</button>
           </div>
         </div>
         <div class="spacer"></div>
@@ -333,6 +378,48 @@
   </div>
   <div class="composer-hint">AETHER AI routes requests to third-party AI providers. Verify important output.</div>
 </main>
+
+<input type="file" id="fileInput" style="display:none">
+<input type="file" id="photoInput" accept="image/*" style="display:none">
+
+<div class="modal-backdrop" id="authModal">
+  <div class="modal">
+    <div class="modal-tabs">
+      <button class="active" id="tabLogin">Log in</button>
+      <button id="tabSignup">Sign up</button>
+    </div>
+    <h3 id="authModalTitle">Log in</h3>
+    <input type="text" id="authIdentifier" placeholder="Email or phone">
+    <input type="password" id="authPassword" placeholder="Password">
+    <div class="modal-error" id="authError"></div>
+    <div class="modal-actions">
+      <button id="cancelAuthBtn">Cancel</button>
+      <button class="primary" id="confirmAuthBtn">Log in</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="imageModal">
+  <div class="modal">
+    <h3>Generate an image</h3>
+    <p class="hint">Free image generation — describe what you want to see.</p>
+    <textarea id="imagePrompt" rows="3" placeholder="e.g. a fox reading a book by candlelight, watercolor style"></textarea>
+    <div class="modal-actions">
+      <button id="cancelImageBtn">Cancel</button>
+      <button class="primary" id="confirmImageBtn">Generate</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="videoModal">
+  <div class="modal">
+    <h3>Video generation</h3>
+    <p class="hint">There isn't a reliable free video-generation API yet — every option that exists needs a paid key. Once you add one in the admin panel (under a video provider), this button will use it. For now this is a placeholder so it doesn't fail silently.</p>
+    <div class="modal-actions">
+      <button class="primary" id="closeVideoBtn">Got it</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const sidebar = document.getElementById('sidebar');
@@ -361,6 +448,13 @@ async function loadModelList(){
   } catch (err) {
     availableModels = [];
   }
+  if (availableModels.length && !selectedModelId) {
+    selectedModelId = availableModels[0].id;
+    modelPickerBadge.textContent = availableModels[0].customName;
+  }
+  if (!availableModels.length) {
+    modelPickerBadge.textContent = 'no models';
+  }
   renderModelDropdown();
 }
 
@@ -370,12 +464,6 @@ function renderModelDropdown(){
     modelDropdown.innerHTML = '<div class="empty">No models enabled yet — add one in /admin</div>';
     return;
   }
-  const autoBtn = document.createElement('button');
-  autoBtn.textContent = 'Auto-route (default)';
-  autoBtn.className = selectedModelId === null ? 'active' : '';
-  autoBtn.onclick = (e) => { e.stopPropagation(); selectModel(null, 'auto-route'); };
-  modelDropdown.appendChild(autoBtn);
-
   availableModels.forEach(m => {
     const btn = document.createElement('button');
     btn.textContent = m.customName;
@@ -413,7 +501,7 @@ input.addEventListener('keydown', (e) => {
 });
 sendBtn.onclick = sendMessage;
 
-function addMessage(role, text, modelTag){
+function addMessage(role, html, modelTag){
   emptyState.style.display = 'none';
   const row = document.createElement('div');
   row.className = 'msg ' + role;
@@ -421,17 +509,68 @@ function addMessage(role, text, modelTag){
     <div class="avatar">${role === 'user' ? 'You' : 'AI'}</div>
     <div class="msg-bubble">
       ${role === 'ai' && modelTag ? `<div class="msg-model-tag">${modelTag}</div>` : ''}
-      ${text}
+      ${html}
     </div>`;
   messages.appendChild(row);
   document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
 }
 
+let pendingAttachments = [];
+const attachmentRow = document.getElementById('attachmentRow');
+
+function renderAttachments(){
+  attachmentRow.innerHTML = '';
+  attachmentRow.classList.toggle('show', pendingAttachments.length > 0);
+  pendingAttachments.forEach((att, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'attachment-chip';
+    chip.innerHTML = `${att.isImage ? `<img src="${att.dataUrl}">` : '📄'} <span>${att.name}</span> <button data-i="${i}">✕</button>`;
+    chip.querySelector('button').onclick = () => { pendingAttachments.splice(i, 1); renderAttachments(); };
+    attachmentRow.appendChild(chip);
+  });
+}
+
+function handleFileSelected(file, isImage){
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingAttachments.push({ name: file.name, isImage, dataUrl: reader.result });
+    renderAttachments();
+  };
+  reader.readAsDataURL(file);
+}
+
+const fileInput = document.getElementById('fileInput');
+const photoInput = document.getElementById('photoInput');
+document.getElementById('addFileBtn').onclick = () => { plusMenu.classList.remove('open'); fileInput.click(); };
+document.getElementById('addPhotoBtn').onclick = () => { plusMenu.classList.remove('open'); photoInput.click(); };
+fileInput.onchange = () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0], false); fileInput.value = ''; };
+photoInput.onchange = () => { if (photoInput.files[0]) handleFileSelected(photoInput.files[0], true); photoInput.value = ''; };
+
 async function sendMessage(){
   const text = input.value.trim();
-  if (!text) return;
-  addMessage('user', text);
+  if (!text && !pendingAttachments.length) return;
+
+  let userHtml = text ? escapeHtml(text) : '';
+  pendingAttachments.forEach(att => {
+    if (att.isImage) userHtml += `<img class="attached-preview" src="${att.dataUrl}">`;
+    else userHtml += `<div style="margin-top:6px;font-size:12.5px;opacity:.8">📄 ${escapeHtml(att.name)}</div>`;
+  });
+  addMessage('user', userHtml || '(attachment)');
+
+  const hadAttachments = pendingAttachments.length > 0;
   input.value = ''; input.style.height = 'auto';
+  pendingAttachments = [];
+  renderAttachments();
+
+  if (!selectedModelId) {
+    addMessage('ai', 'No AI model is enabled yet. Add and enable one in the admin panel.', 'system');
+    return;
+  }
+
+  if (hadAttachments && !text) {
+    addMessage('ai', "I've attached that, but heads up — this model isn't wired up to actually read files or images yet (that needs a vision-capable model connected in the admin panel). For now, attachments just show in the chat.", 'system');
+    return;
+  }
 
   try {
     const res = await fetch('/api/chat', {
@@ -440,11 +579,114 @@ async function sendMessage(){
       body: JSON.stringify({ message: text, modelId: selectedModelId })
     });
     const data = await res.json();
-    addMessage('ai', data.reply || 'No response from backend yet.', data.model);
+    addMessage('ai', escapeHtml(data.reply || 'No response.'), data.model);
   } catch (err) {
-    addMessage('ai', 'Backend not connected yet — this is a UI preview. Hook up /api/chat to see live replies.', 'system');
+    addMessage('ai', 'Could not reach the backend. Try again in a moment.', 'system');
   }
 }
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML.replace(/\n/g, '<br>');
+}
+
+const imageModal = document.getElementById('imageModal');
+document.getElementById('generateImageBtn').onclick = () => {
+  plusMenu.classList.remove('open');
+  document.getElementById('imagePrompt').value = '';
+  imageModal.classList.add('open');
+};
+document.getElementById('cancelImageBtn').onclick = () => imageModal.classList.remove('open');
+document.getElementById('confirmImageBtn').onclick = () => {
+  const prompt = document.getElementById('imagePrompt').value.trim();
+  if (!prompt) return;
+  imageModal.classList.remove('open');
+  addMessage('user', escapeHtml(prompt));
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
+  addMessage('ai', `<img class="generated" src="${url}" alt="generated image">`, 'Image generator');
+};
+
+const videoModal = document.getElementById('videoModal');
+document.getElementById('generateVideoBtn').onclick = () => { plusMenu.classList.remove('open'); videoModal.classList.add('open'); };
+document.getElementById('closeVideoBtn').onclick = () => videoModal.classList.remove('open');
+
+const authModal = document.getElementById('authModal');
+const authBtn = document.getElementById('authBtn');
+const authBtnLabel = document.getElementById('authBtnLabel');
+const authAvatar = document.getElementById('authAvatar');
+const tabLogin = document.getElementById('tabLogin');
+const tabSignup = document.getElementById('tabSignup');
+const authModalTitle = document.getElementById('authModalTitle');
+const confirmAuthBtn = document.getElementById('confirmAuthBtn');
+const authError = document.getElementById('authError');
+let authMode = 'login';
+let loggedInAs = null;
+
+function setAuthMode(mode){
+  authMode = mode;
+  tabLogin.classList.toggle('active', mode === 'login');
+  tabSignup.classList.toggle('active', mode === 'signup');
+  authModalTitle.textContent = mode === 'login' ? 'Log in' : 'Sign up';
+  confirmAuthBtn.textContent = mode === 'login' ? 'Log in' : 'Create account';
+  authError.style.display = 'none';
+}
+tabLogin.onclick = () => setAuthMode('login');
+tabSignup.onclick = () => setAuthMode('signup');
+
+authBtn.onclick = () => {
+  if (loggedInAs) return;
+  document.getElementById('authIdentifier').value = '';
+  document.getElementById('authPassword').value = '';
+  setAuthMode('login');
+  authModal.classList.add('open');
+};
+document.getElementById('cancelAuthBtn').onclick = () => authModal.classList.remove('open');
+
+confirmAuthBtn.onclick = async () => {
+  const identifier = document.getElementById('authIdentifier').value.trim();
+  const password = document.getElementById('authPassword').value;
+  authError.style.display = 'none';
+  if (!identifier || !password) {
+    authError.textContent = 'Fill in both fields.';
+    authError.style.display = 'block';
+    return;
+  }
+  const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ identifier, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      authError.textContent = data.error || 'Something went wrong.';
+      authError.style.display = 'block';
+      return;
+    }
+    if (authMode === 'signup') {
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ identifier, password })
+      });
+      if (!loginRes.ok) {
+        setAuthMode('login');
+        authError.textContent = 'Account created — please log in.';
+        authError.style.display = 'block';
+        return;
+      }
+    }
+    loggedInAs = identifier;
+    authBtnLabel.textContent = identifier;
+    authAvatar.textContent = identifier.slice(0, 1).toUpperCase();
+    authModal.classList.remove('open');
+  } catch (err) {
+    authError.textContent = 'Could not reach the server.';
+    authError.style.display = 'block';
+  }
+};
 
 const micBtn = document.getElementById('micBtn');
 let recognizing = false, recognition;
