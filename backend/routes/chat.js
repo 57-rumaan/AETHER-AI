@@ -1,33 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
+const { loadModelConfig } = require('../config/store');
 
-function loadModelConfig() {
-  const raw = fs.readFileSync(path.join(__dirname, '../config/models.json'), 'utf-8');
-  return JSON.parse(raw);
-}
-
-// GET /api/chat/models — public list of enabled models for the picker dropdown.
-// Only sends id + customName, never API keys.
-router.get('/models', (req, res) => {
-  const config = loadModelConfig();
-  const list = [];
-  for (const provider of config.providers) {
-    for (const model of provider.models) {
-      if (model.enabled) list.push({ id: model.id, customName: model.customName });
+router.get('/models', async (req, res) => {
+  try {
+    const config = await loadModelConfig();
+    const list = [];
+    for (const provider of config.providers) {
+      for (const model of provider.models) {
+        if (model.enabled) list.push({ id: model.id, customName: model.customName });
+      }
     }
+    res.json(list);
+  } catch (err) {
+    console.error(err);
+    res.json([]);
   }
-  res.json(list);
 });
 
-// POST /api/chat  { message, modelId? }
-// The frontend NEVER sees or sends API keys. Keys live only in backend env vars.
 router.post('/', async (req, res) => {
   const { message, modelId } = req.body;
   if (!message) return res.status(400).json({ error: 'message is required' });
 
-  const config = loadModelConfig();
+  let config;
+  try {
+    config = await loadModelConfig();
+  } catch (err) {
+    console.error(err);
+    return res.json({ reply: 'Could not reach the settings store. Check JSONBIN_BIN_ID / JSONBIN_API_KEY on the server.', model: 'system' });
+  }
 
   let target = null;
   for (const provider of config.providers) {
