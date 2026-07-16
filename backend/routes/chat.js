@@ -8,20 +8,17 @@ function loadModelConfig() {
   return JSON.parse(raw);
 }
 
-// GET /api/chat/models — public list of enabled models for the chat UI.
-// Only sends what the frontend actually needs (id, provider, display name).
-// Never sends API keys or per-model rules — those stay server-side only.
+// GET /api/chat/models — public list of enabled models for the picker dropdown.
+// Only sends id + customName, never API keys.
 router.get('/models', (req, res) => {
   const config = loadModelConfig();
   const list = [];
   for (const provider of config.providers) {
     for (const model of provider.models) {
-      if (model.enabled) {
-        list.push({ id: model.id, providerId: provider.id, name: model.customName });
-      }
+      if (model.enabled) list.push({ id: model.id, customName: model.customName });
     }
   }
-  res.json({ models: list });
+  res.json(list);
 });
 
 // POST /api/chat  { message, modelId? }
@@ -32,7 +29,6 @@ router.post('/', async (req, res) => {
 
   const config = loadModelConfig();
 
-  // Pick the requested model, or the first enabled one (simple auto-route).
   let target = null;
   for (const provider of config.providers) {
     for (const model of provider.models) {
@@ -61,7 +57,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Add one function per provider here as you plug in real APIs.
 async function callProvider(providerId, apiKey, modelId, message, modelRules, globalRules) {
   const systemPrompt = [globalRules, modelRules].filter(Boolean).join('\n');
 
@@ -89,6 +84,22 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
     });
     const data = await r.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No reply.';
+  }
+
+  if (providerId === 'huggingface' || providerId === 'hugging-face') {
+    const r = await fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+          { role: 'user', content: message }
+        ]
+      })
+    });
+    const data = await r.json();
+    return data.choices?.[0]?.message?.content || 'No reply.';
   }
 
   throw new Error(`No handler wired up for provider "${providerId}" yet.`);
