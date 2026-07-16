@@ -91,6 +91,27 @@ async function callProvider(providerId, apiKey, modelId, message, modelRules, gl
     return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No reply.';
   }
 
+  if (providerId === 'groq') {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+          { role: 'user', content: message }
+        ]
+      })
+    });
+    const raw = await r.text();
+    if (!r.ok) {
+      console.error(`Groq returned status ${r.status}:`, raw.slice(0, 500));
+      throw new Error(`Groq request failed (status ${r.status})`);
+    }
+    const data = JSON.parse(raw);
+    return data.choices?.[0]?.message?.content || 'No reply.';
+  }
+
   if (providerId === 'huggingface' || providerId === 'hugging-face') {
     const r = await fetch('https://router.huggingface.co/v1/chat/completions', {
       method: 'POST',
