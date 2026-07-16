@@ -36,7 +36,10 @@ router.get('/models', async (req, res) => {
 
 router.post('/models', async (req, res) => {
   try {
-    await saveModelConfig(req.body);
+    const current = await loadModelConfig();
+    current.providers = req.body.providers;
+    current.globalRules = req.body.globalRules;
+    await saveModelConfig(current);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
