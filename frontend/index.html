@@ -439,6 +439,8 @@ const modelPicker = document.getElementById('modelPicker');
 const modelDropdown = document.getElementById('modelDropdown');
 const modelPickerBadge = document.getElementById('modelPickerBadge');
 let selectedModelId = null;
+let selectedIsLinked = false;
+let selectedTtsEnabled = false;
 let availableModels = [];
 
 async function loadModelList(){
@@ -449,8 +451,7 @@ async function loadModelList(){
     availableModels = [];
   }
   if (availableModels.length && !selectedModelId) {
-    selectedModelId = availableModels[0].id;
-    modelPickerBadge.textContent = availableModels[0].customName;
+    selectModel(availableModels[0].id, availableModels[0].customName, availableModels[0].isLinked, availableModels[0].ttsEnabled);
   }
   if (!availableModels.length) {
     modelPickerBadge.textContent = 'no models';
@@ -466,15 +467,17 @@ function renderModelDropdown(){
   }
   availableModels.forEach(m => {
     const btn = document.createElement('button');
-    btn.textContent = m.customName;
+    btn.textContent = m.customName + (m.isLinked ? ' 🔗' : '');
     btn.className = selectedModelId === m.id ? 'active' : '';
-    btn.onclick = (e) => { e.stopPropagation(); selectModel(m.id, m.customName); };
+    btn.onclick = (e) => { e.stopPropagation(); selectModel(m.id, m.customName, m.isLinked, m.ttsEnabled); };
     modelDropdown.appendChild(btn);
   });
 }
 
-function selectModel(id, label){
+function selectModel(id, label, isLinked, ttsEnabled){
   selectedModelId = id;
+  selectedIsLinked = !!isLinked;
+  selectedTtsEnabled = !!ttsEnabled;
   modelPickerBadge.textContent = label;
   modelDropdown.classList.remove('open');
   renderModelDropdown();
@@ -558,6 +561,7 @@ async function sendMessage(){
   addMessage('user', userHtml || '(attachment)');
 
   const hadAttachments = pendingAttachments.length > 0;
+  const pendingAttachmentsSnapshot = pendingAttachments.slice();
   input.value = ''; input.style.height = 'auto';
   pendingAttachments = [];
   renderAttachments();
@@ -567,22 +571,39 @@ async function sendMessage(){
     return;
   }
 
-  if (hadAttachments && !text) {
-    addMessage('ai', "I've attached that, but heads up — this model isn't wired up to actually read files or images yet (that needs a vision-capable model connected in the admin panel). For now, attachments just show in the chat.", 'system');
-    return;
+  const imageAttachment = pendingAttachmentsSnapshot.find(a => a.isImage);
+  const nonImageAttachment = pendingAttachmentsSnapshot.find(a => !a.isImage);
+
+  if (nonImageAttachment && !imageAttachment) {
+    addMessage('ai', "I've attached that, but this model can only read images right now, not general files (docs/PDFs need a separate setup). Try attaching a photo instead, or just ask your question as text.", 'system');
+    if (!text) return;
   }
 
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ message: text, modelId: selectedModelId })
+      body: JSON.stringify({
+        message: text,
+        modelId: selectedModelId,
+        isLinked: selectedIsLinked,
+        imageDataUrl: imageAttachment ? imageAttachment.dataUrl : undefined
+      })
     });
     const data = await res.json();
-    addMessage('ai', escapeHtml(data.reply || 'No response.'), data.model);
+    const replyText = data.reply || 'No response.';
+    addMessage('ai', escapeHtml(replyText), data.model);
+    if (selectedTtsEnabled) speakText(replyText);
   } catch (err) {
     addMessage('ai', 'Could not reach the backend. Try again in a moment.', 'system');
   }
+}
+
+function speakText(text){
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  window.speechSynthesis.speak(utterance);
 }
 
 function escapeHtml(str){
@@ -598,12 +619,30 @@ document.getElementById('generateImageBtn').onclick = () => {
   imageModal.classList.add('open');
 };
 document.getElementById('cancelImageBtn').onclick = () => imageModal.classList.remove('open');
-document.getElementById('confirmImageBtn').onclick = () => {
+document.getElementById('confirmImageBtn').onclick = async () => {
   const prompt = document.getElementById('imagePrompt').value.trim();
   if (!prompt) return;
   imageModal.classList.remove('open');
   addMessage('user', escapeHtml(prompt));
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
+  addMessage('ai', 'Generating…', 'Image generator');
+  const loadingRow = messages.lastElementChild;
+
+  let url = null;
+  if (selectedIsLinked) {
+    try {
+      const res = await fetch('/api/chat/generate-image', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ linkedModelId: selectedModelId, prompt })
+      });
+      const data = await res.json();
+      if (data.url) url = data.url;
+    } catch (err) { /* falls through to the free default below */ }
+  }
+  if (!url) {
+    url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
+  }
+  loadingRow.remove();
   addMessage('ai', `<img class="generated" src="${url}" alt="generated image">`, 'Image generator');
 };
 
