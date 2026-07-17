@@ -13,64 +13,33 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;}
-  .login-screen{
-    min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
-  }
-  .login-card{
-    background:var(--surface);border:1px solid var(--border);border-radius:16px;
-    padding:32px;width:320px;display:flex;flex-direction:column;gap:14px;
-  }
+  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:320px;display:flex;flex-direction:column;gap:14px;}
   .login-card h1{font-family:var(--font-d);font-size:19px;}
   .login-card p{color:var(--muted);font-size:12.5px;line-height:1.5;}
-  input{
-    background:var(--bg);border:1px solid var(--border);border-radius:9px;
-    padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;
-  }
-  input:focus{border-color:var(--accent);}
-  button.primary{
-    background:var(--accent);color:#0B0D12;border:none;border-radius:9px;
-    padding:11px;font-weight:600;font-size:14px;
-  }
+  input,select,textarea{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  button.primary{background:var(--accent);color:#0B0D12;border:none;border-radius:9px;padding:11px;font-weight:600;font-size:14px;}
   .error{color:#ff6b6b;font-size:12.5px;display:none;}
 
   .dash{display:none;}
   .dash.active{display:block;}
 
-  .topbar{
-    display:flex;align-items:center;gap:12px;
-    height:56px;padding:0 16px;border-bottom:1px solid var(--border);
-    background:var(--surface);position:sticky;top:0;z-index:20;
-  }
-  .hamburger{
-    width:36px;height:36px;border-radius:9px;border:none;background:transparent;
-    display:flex;align-items:center;justify-content:center;color:var(--text);flex-shrink:0;
-  }
+  .topbar{display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:20;}
+  .hamburger{width:36px;height:36px;border-radius:9px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text);flex-shrink:0;}
   .hamburger:hover{background:var(--raised);}
   .topbar h2{font-family:var(--font-d);font-size:16px;}
 
-  .side{
-    position:fixed;top:0;left:0;bottom:0;width:250px;
-    background:var(--surface);border-right:1px solid var(--border);
-    padding:20px 14px;z-index:40;
-    transform:translateX(-100%);transition:transform .22s ease;
-  }
+  .side{position:fixed;top:0;left:0;bottom:0;width:250px;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;z-index:40;transform:translateX(-100%);transition:transform .22s ease;}
   .side.open{transform:translateX(0);}
   .side-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
   .side h2{font-family:var(--font-d);font-size:15px;}
-  .side button.close-btn{
-    width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--muted);
-  }
+  .side button.close-btn{width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--muted);}
   .side button.close-btn:hover{background:var(--raised);}
-  .side .nav-btn{
-    display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--muted);
-    padding:9px 10px;border-radius:8px;font-size:13.5px;margin-bottom:2px;
-  }
+  .side .nav-btn{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--muted);padding:9px 10px;border-radius:8px;font-size:13.5px;margin-bottom:2px;}
   .side .nav-btn:hover,.side .nav-btn.active{background:var(--raised);color:var(--text);}
 
-  .backdrop{
-    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;
-    opacity:0;pointer-events:none;transition:opacity .2s ease;
-  }
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s ease;}
   .backdrop.open{opacity:1;pointer-events:auto;}
 
   .content{padding:26px 20px;max-width:720px;margin:0 auto;}
@@ -83,45 +52,36 @@
   .provider-row .env{font-family:var(--font-m);font-size:11px;color:var(--warm);}
   .remove-btn{background:transparent;border:none;color:#ff6b6b;font-size:12px;padding:4px 8px;border-radius:6px;flex-shrink:0;}
   .remove-btn:hover{background:rgba(255,107,107,.1);}
-  .model-row{
-    display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);
-  }
+  .model-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);}
   .model-row input[type=text]{flex:1;padding:7px 10px;font-size:13px;min-width:0;}
   .toggle{width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;cursor:pointer;flex-shrink:0;}
   .toggle.on{background:var(--accent);}
   .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;}
   .toggle.on::after{left:18px;}
-  textarea{
-    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;
-    color:var(--text);font-family:inherit;font-size:13.5px;padding:10px;min-height:80px;resize:vertical;
-  }
+  textarea{width:100%;min-height:80px;resize:vertical;}
   .save-btn{margin-top:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;}
   .save-btn:hover{border-color:var(--accent);}
-  .add-btn{
-    width:100%;background:var(--raised);border:1px dashed var(--border);color:var(--muted);
-    padding:12px;border-radius:10px;font-size:13.5px;margin-bottom:14px;
-  }
+  .add-btn{width:100%;background:var(--raised);border:1px dashed var(--border);color:var(--muted);padding:12px;border-radius:10px;font-size:13.5px;margin-bottom:14px;}
   .add-btn:hover{border-color:var(--accent);color:var(--text);}
-  .add-model-btn{
-    margin-top:9px;background:transparent;border:1px dashed var(--border);color:var(--muted);
-    padding:7px 10px;border-radius:8px;font-size:12.5px;width:100%;
-  }
+  .add-model-btn{margin-top:9px;background:transparent;border:1px dashed var(--border);color:var(--muted);padding:7px 10px;border-radius:8px;font-size:12.5px;width:100%;}
   .add-model-btn:hover{border-color:var(--accent);color:var(--text);}
 
-  .modal-backdrop{
-    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;
-    display:none;align-items:center;justify-content:center;padding:20px;
-  }
+  .linked-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+  .linked-card h3{font-family:var(--font-d);font-size:15px;margin-bottom:8px;}
+  .capability-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:13px;}
+  .capability-row .cap-name{color:var(--muted);}
+  .capability-row .cap-value{color:var(--text);font-size:12.5px;text-align:right;}
+  .capability-row .cap-value.unset{color:var(--text-faint,#565C6D);}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none;align-items:center;justify-content:center;padding:20px;}
   .modal-backdrop.open{display:flex;}
-  .modal{
-    background:var(--surface);border:1px solid var(--border);border-radius:14px;
-    padding:20px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;
-  }
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px;max-height:85vh;overflow-y:auto;}
   .modal h3{font-family:var(--font-d);font-size:15px;margin-bottom:4px;}
   .modal label{font-size:12px;color:var(--muted);margin-bottom:-4px;}
   .modal-actions{display:flex;gap:8px;margin-top:6px;}
   .modal-actions button{flex:1;padding:9px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:var(--raised);color:var(--text);}
   .modal-actions button.primary{background:var(--accent);color:#0B0D12;border:none;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);}
 </style>
 </head>
 <body>
@@ -154,6 +114,7 @@
       </button>
     </div>
     <button class="nav-btn active" data-tab="models">Add / manage APIs</button>
+    <button class="nav-btn" data-tab="linked">Linked models</button>
     <button class="nav-btn" data-tab="rules">Global rules</button>
     <button class="nav-btn" data-tab="users">Users & usage</button>
   </div>
@@ -165,6 +126,14 @@
       <button class="add-btn" id="addProviderBtn">+ Add a new API / provider</button>
       <div id="providerList"></div>
     </div>
+
+    <div id="tab-linked" style="display:none">
+      <h2>Linked models</h2>
+      <div class="sub">Bundle several models under one name — e.g. "AETHER UPGRADED" for chat + a different one for images. Add the individual provider/models above first, then link them here.</div>
+      <button class="add-btn" id="addLinkedBtn">+ Create a linked model</button>
+      <div id="linkedList"></div>
+    </div>
+
     <div id="tab-rules" style="display:none">
       <h2>Global rules</h2>
       <div class="sub">Applies to every model unless a model has its own rule set below it.</div>
@@ -173,6 +142,7 @@
         <button class="save-btn" id="saveRules">Save</button>
       </div>
     </div>
+
     <div id="tab-users" style="display:none">
       <h2>Users & usage</h2>
       <div class="sub">Signups, login history, per-user chat volume. Connect a real database to populate this.</div>
@@ -209,6 +179,37 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="linkedModal">
+  <div class="modal">
+    <h3 id="linkedModalTitle">Create a linked model</h3>
+    <label>Name (shown in the chat app's model picker)</label>
+    <input type="text" id="linkedName" placeholder="e.g. AETHER UPGRADED">
+
+    <label>Chat model</label>
+    <select id="linkedChatSelect"><option value="">— none —</option></select>
+
+    <label>Image generation</label>
+    <select id="linkedImageSelect">
+      <option value="">Use free default generator</option>
+    </select>
+
+    <label>Video generation</label>
+    <select id="linkedVideoSelect">
+      <option value="">Not available yet — needs a paid API key</option>
+    </select>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="linkedTts">
+      <label style="margin:0" for="linkedTts">Enable voice replies (free, browser-based text-to-speech)</label>
+    </div>
+
+    <div class="modal-actions">
+      <button id="cancelLinkedBtn">Cancel</button>
+      <button class="primary" id="confirmLinkedBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const loginScreen = document.getElementById('loginScreen');
 const dash = document.getElementById('dash');
@@ -240,10 +241,11 @@ document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.nav-btn[data-tab]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    ['models','rules','users'].forEach(t => {
+    ['models','linked','rules','users'].forEach(t => {
       document.getElementById('tab-' + t).style.display = (t === btn.dataset.tab) ? 'block' : 'none';
     });
     if (btn.dataset.tab === 'users') loadUsers();
+    if (btn.dataset.tab === 'linked') renderLinkedModels();
     closeSide();
   };
 });
@@ -253,8 +255,25 @@ let modelConfig = null;
 async function loadModels(){
   const res = await fetch('/api/admin/models');
   modelConfig = await res.json();
+  if (!modelConfig.linkedModels) modelConfig.linkedModels = [];
   document.getElementById('globalRules').value = modelConfig.globalRules || '';
   renderProviders();
+  renderLinkedModels();
+}
+
+function flatModelOptions(){
+  const opts = [];
+  modelConfig.providers.forEach(provider => {
+    provider.models.forEach(model => {
+      opts.push({
+        value: provider.id + '::' + model.id,
+        label: `${provider.label} — ${model.customName}`,
+        providerId: provider.id,
+        modelId: model.id
+      });
+    });
+  });
+  return opts;
 }
 
 function renderProviders(){
@@ -306,16 +325,111 @@ function renderProviders(){
   const saveBtn = document.createElement('button');
   saveBtn.className = 'save-btn';
   saveBtn.textContent = 'Save changes';
-  saveBtn.onclick = async () => {
-    await fetch('/api/admin/models', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(modelConfig)
-    });
-    saveBtn.textContent = 'Saved ✓';
-    setTimeout(() => saveBtn.textContent = 'Save changes', 1200);
-  };
+  saveBtn.onclick = saveAll;
   list.appendChild(saveBtn);
 }
+
+async function saveAll(){
+  await fetch('/api/admin/models', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(modelConfig)
+  });
+}
+
+function renderLinkedModels(){
+  const list = document.getElementById('linkedList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!modelConfig.linkedModels.length) {
+    list.innerHTML = '<div class="sub">No linked models yet.</div>';
+    return;
+  }
+  modelConfig.linkedModels.forEach((linked, i) => {
+    const card = document.createElement('div');
+    card.className = 'linked-card';
+    const chatLabel = linked.chat ? findModelLabel(linked.chat) : null;
+    const imageLabel = linked.image ? findModelLabel(linked.image) : null;
+    card.innerHTML = `
+      <div class="provider-row">
+        <h3>${linked.name}</h3>
+        <button class="remove-btn" data-remove-linked="${i}">Remove</button>
+      </div>
+      <div class="capability-row"><span class="cap-name">Chat</span><span class="cap-value ${chatLabel ? '' : 'unset'}">${chatLabel || 'not set'}</span></div>
+      <div class="capability-row"><span class="cap-name">Image generation</span><span class="cap-value ${imageLabel ? '' : 'unset'}">${imageLabel || 'free default'}</span></div>
+      <div class="capability-row"><span class="cap-name">Video generation</span><span class="cap-value unset">not available yet</span></div>
+      <div class="capability-row"><span class="cap-name">Voice replies</span><span class="cap-value ${linked.tts ? '' : 'unset'}">${linked.tts ? 'on (browser voice)' : 'off'}</span></div>
+      <div class="toggle ${linked.enabled ? 'on' : ''}" style="margin-top:10px" data-toggle-linked="${i}"></div>
+    `;
+    list.appendChild(card);
+  });
+  list.querySelectorAll('[data-remove-linked]').forEach(btn => {
+    btn.onclick = async () => {
+      modelConfig.linkedModels.splice(Number(btn.dataset.removeLinked), 1);
+      await saveAll();
+      renderLinkedModels();
+    };
+  });
+  list.querySelectorAll('[data-toggle-linked]').forEach(el => {
+    el.onclick = async () => {
+      const i = Number(el.dataset.toggleLinked);
+      modelConfig.linkedModels[i].enabled = !modelConfig.linkedModels[i].enabled;
+      await saveAll();
+      renderLinkedModels();
+    };
+  });
+}
+
+function findModelLabel(ref){
+  const provider = modelConfig.providers.find(p => p.id === ref.providerId);
+  if (!provider) return null;
+  const model = provider.models.find(m => m.id === ref.modelId);
+  if (!model) return null;
+  return `${provider.label} — ${model.customName}`;
+}
+
+const linkedModal = document.getElementById('linkedModal');
+document.getElementById('addLinkedBtn').onclick = () => {
+  document.getElementById('linkedName').value = '';
+  document.getElementById('linkedTts').checked = false;
+
+  const chatSelect = document.getElementById('linkedChatSelect');
+  const imageSelect = document.getElementById('linkedImageSelect');
+  chatSelect.innerHTML = '<option value="">— none —</option>';
+  imageSelect.innerHTML = '<option value="">Use free default generator</option>';
+  flatModelOptions().forEach(opt => {
+    chatSelect.innerHTML += `<option value="${opt.value}">${opt.label}</option>`;
+    imageSelect.innerHTML += `<option value="${opt.value}">${opt.label}</option>`;
+  });
+
+  linkedModal.classList.add('open');
+};
+document.getElementById('cancelLinkedBtn').onclick = () => linkedModal.classList.remove('open');
+document.getElementById('confirmLinkedBtn').onclick = async () => {
+  const name = document.getElementById('linkedName').value.trim();
+  if (!name) return;
+  const chatVal = document.getElementById('linkedChatSelect').value;
+  const imageVal = document.getElementById('linkedImageSelect').value;
+  const tts = document.getElementById('linkedTts').checked;
+
+  const parseVal = (v) => {
+    if (!v) return null;
+    const [providerId, modelId] = v.split('::');
+    return { providerId, modelId };
+  };
+
+  modelConfig.linkedModels.push({
+    id: 'linked-' + Date.now(),
+    name,
+    enabled: true,
+    chat: parseVal(chatVal),
+    image: parseVal(imageVal),
+    video: null,
+    tts
+  });
+  await saveAll();
+  linkedModal.classList.remove('open');
+  renderLinkedModels();
+};
 
 const providerModal = document.getElementById('providerModal');
 document.getElementById('addProviderBtn').onclick = () => {
