@@ -8,7 +8,7 @@
 <style>
   :root{
     --bg:#0B0D12;--surface:#14161D;--raised:#1B1E27;--border:#262A35;
-    --accent:#6C8EF5;--warm:#E8A253;--text:#EDEFF3;--muted:#8891A3;
+    --accent:#6C8EF5;--warm:#E8A253;--text:#EDEFF3;--muted:#8891A3;--faint:#565C6D;
     --font-d:'Space Grotesk',sans-serif;--font-b:'Inter',sans-serif;--font-m:'JetBrains Mono',monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -52,26 +52,32 @@
   .provider-row .env{font-family:var(--font-m);font-size:11px;color:var(--warm);}
   .remove-btn{background:transparent;border:none;color:#ff6b6b;font-size:12px;padding:4px 8px;border-radius:6px;flex-shrink:0;}
   .remove-btn:hover{background:rgba(255,107,107,.1);}
-  .model-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);}
+  .model-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--border);}
   .model-row input[type=text]{flex:1;padding:7px 10px;font-size:13px;min-width:0;}
-  .toggle{width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;cursor:pointer;flex-shrink:0;}
-  .toggle.on{background:var(--accent);}
-  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;}
-  .toggle.on::after{left:18px;}
-  textarea{width:100%;min-height:80px;resize:vertical;}
-  .save-btn{margin-top:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;}
-  .save-btn:hover{border-color:var(--accent);}
+  .model-row .model-id{font-family:var(--font-m);font-size:10.5px;color:var(--muted);flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .model-row .x-btn{background:transparent;border:none;color:#ff6b6b;font-size:15px;padding:2px 4px;flex-shrink:0;}
   .add-btn{width:100%;background:var(--raised);border:1px dashed var(--border);color:var(--muted);padding:12px;border-radius:10px;font-size:13.5px;margin-bottom:14px;}
   .add-btn:hover{border-color:var(--accent);color:var(--text);}
   .add-model-btn{margin-top:9px;background:transparent;border:1px dashed var(--border);color:var(--muted);padding:7px 10px;border-radius:8px;font-size:12.5px;width:100%;}
   .add-model-btn:hover{border-color:var(--accent);color:var(--text);}
+  .save-btn{margin-top:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;}
+  .save-btn:hover{border-color:var(--accent);}
+  textarea{width:100%;min-height:80px;resize:vertical;}
 
-  .linked-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
-  .linked-card h3{font-family:var(--font-d);font-size:15px;margin-bottom:8px;}
-  .capability-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border);font-size:13px;}
-  .capability-row .cap-name{color:var(--muted);}
-  .capability-row .cap-value{color:var(--text);font-size:12.5px;text-align:right;}
-  .capability-row .cap-value.unset{color:var(--text-faint,#565C6D);}
+  .group-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+  .group-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px;}
+  .group-head h3{font-family:var(--font-d);font-size:16px;}
+  .group-head-actions{display:flex;gap:6px;flex-shrink:0;}
+  .cap-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:13px;}
+  .cap-row .cap-info{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .cap-row .cap-type{font-family:var(--font-m);font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.3px;}
+  .cap-row .cap-target{color:var(--text);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cap-empty{color:var(--faint);font-size:12.5px;padding:7px 0;border-top:1px solid var(--border);}
+  .toggle{width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;cursor:pointer;flex-shrink:0;}
+  .toggle.on{background:var(--accent);}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s;}
+  .toggle.on::after{left:18px;}
+  .group-footer-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;color:var(--muted);}
 
   .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:none;align-items:center;justify-content:center;padding:20px;}
   .modal-backdrop.open{display:flex;}
@@ -81,7 +87,6 @@
   .modal-actions{display:flex;gap:8px;margin-top:6px;}
   .modal-actions button{flex:1;padding:9px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:var(--raised);color:var(--text);}
   .modal-actions button.primary{background:var(--accent);color:#0B0D12;border:none;}
-  .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);}
 </style>
 </head>
 <body>
@@ -113,30 +118,30 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <button class="nav-btn active" data-tab="models">Add / manage APIs</button>
-    <button class="nav-btn" data-tab="linked">Linked models</button>
+    <button class="nav-btn" data-tab="providers">Add APIs</button>
+    <button class="nav-btn active" data-tab="groups">Models</button>
     <button class="nav-btn" data-tab="rules">Global rules</button>
     <button class="nav-btn" data-tab="users">Users & usage</button>
   </div>
 
   <div class="content">
-    <div id="tab-models">
-      <h2>Providers & models</h2>
-      <div class="sub">Each provider's API key comes from your server's environment variables — never typed in here, never stored in this page.</div>
+    <div id="tab-providers" style="display:none">
+      <h2>APIs & raw models</h2>
+      <div class="sub">Register a provider's API key here, then list the model IDs it offers. These don't show up in the chat app by themselves — you build the actual selectable models in the "Models" tab.</div>
       <button class="add-btn" id="addProviderBtn">+ Add a new API / provider</button>
       <div id="providerList"></div>
     </div>
 
-    <div id="tab-linked" style="display:none">
-      <h2>Linked models</h2>
-      <div class="sub">Bundle several models under one name — e.g. "AETHER UPGRADED" for chat + a different one for images. Add the individual provider/models above first, then link them here.</div>
-      <button class="add-btn" id="addLinkedBtn">+ Create a linked model</button>
-      <div id="linkedList"></div>
+    <div id="tab-groups">
+      <h2>Models</h2>
+      <div class="sub">This is the only thing users see in the chat app's model picker. A model here can be a single AI (just a chat model) or a bundle of several — a chat model, an image generator, etc. — all under one name.</div>
+      <button class="add-btn" id="addGroupBtn">+ Create a model</button>
+      <div id="groupList"></div>
     </div>
 
     <div id="tab-rules" style="display:none">
       <h2>Global rules</h2>
-      <div class="sub">Applies to every model unless a model has its own rule set below it.</div>
+      <div class="sub">Applies to every model unless a model has its own rule set.</div>
       <div class="card">
         <textarea id="globalRules" placeholder="e.g. Never reveal API keys. Keep replies under 200 words unless asked for more."></textarea>
         <button class="save-btn" id="saveRules">Save</button>
@@ -167,10 +172,10 @@
 
 <div class="modal-backdrop" id="modelModal">
   <div class="modal">
-    <h3>Add a model</h3>
+    <h3>Add a raw model</h3>
     <label>Model ID (as the provider's API expects it)</label>
     <input type="text" id="newModelId" placeholder="e.g. gpt-4o-mini">
-    <label>Custom name (shown in your app)</label>
+    <label>Reference name (just for you, shown in dropdowns)</label>
     <input type="text" id="newModelName" placeholder="e.g. Quick Replies">
     <div class="modal-actions">
       <button id="cancelModelBtn">Cancel</button>
@@ -179,33 +184,33 @@
   </div>
 </div>
 
-<div class="modal-backdrop" id="linkedModal">
+<div class="modal-backdrop" id="groupModal">
   <div class="modal">
-    <h3 id="linkedModalTitle">Create a linked model</h3>
+    <h3>Create a model</h3>
     <label>Name (shown in the chat app's model picker)</label>
-    <input type="text" id="linkedName" placeholder="e.g. AETHER UPGRADED">
-
-    <label>Chat model</label>
-    <select id="linkedChatSelect"><option value="">— none —</option></select>
-
-    <label>Image generation</label>
-    <select id="linkedImageSelect">
-      <option value="">Use free default generator</option>
-    </select>
-
-    <label>Video generation</label>
-    <select id="linkedVideoSelect">
-      <option value="">Not available yet — needs a paid API key</option>
-    </select>
-
-    <div class="checkbox-row">
-      <input type="checkbox" id="linkedTts">
-      <label style="margin:0" for="linkedTts">Enable voice replies (free, browser-based text-to-speech)</label>
-    </div>
-
+    <input type="text" id="groupName" placeholder="e.g. AETHER UPGRADED">
     <div class="modal-actions">
-      <button id="cancelLinkedBtn">Cancel</button>
-      <button class="primary" id="confirmLinkedBtn">Save</button>
+      <button id="cancelGroupBtn">Cancel</button>
+      <button class="primary" id="confirmGroupBtn">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="capModal">
+  <div class="modal">
+    <h3>Add a model to this bundle</h3>
+    <label>What does it do?</label>
+    <select id="capType">
+      <option value="chat">Chat / text</option>
+      <option value="image">Image generation</option>
+      <option value="video">Video generation</option>
+      <option value="other">Other</option>
+    </select>
+    <label>Which raw model</label>
+    <select id="capModelSelect"></select>
+    <div class="modal-actions">
+      <button id="cancelCapBtn">Cancel</button>
+      <button class="primary" id="confirmCapBtn">Add</button>
     </div>
   </div>
 </div>
@@ -241,11 +246,10 @@ document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.nav-btn[data-tab]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    ['models','linked','rules','users'].forEach(t => {
+    ['providers','groups','rules','users'].forEach(t => {
       document.getElementById('tab-' + t).style.display = (t === btn.dataset.tab) ? 'block' : 'none';
     });
     if (btn.dataset.tab === 'users') loadUsers();
-    if (btn.dataset.tab === 'linked') renderLinkedModels();
     closeSide();
   };
 });
@@ -258,19 +262,21 @@ async function loadModels(){
   if (!modelConfig.linkedModels) modelConfig.linkedModels = [];
   document.getElementById('globalRules').value = modelConfig.globalRules || '';
   renderProviders();
-  renderLinkedModels();
+  renderGroups();
+}
+
+async function saveAll(){
+  await fetch('/api/admin/models', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(modelConfig)
+  });
 }
 
 function flatModelOptions(){
   const opts = [];
   modelConfig.providers.forEach(provider => {
     provider.models.forEach(model => {
-      opts.push({
-        value: provider.id + '::' + model.id,
-        label: `${provider.label} — ${model.customName}`,
-        providerId: provider.id,
-        modelId: model.id
-      });
+      opts.push({ value: provider.id + '::' + model.id, label: `${provider.label} — ${model.customName}` });
     });
   });
   return opts;
@@ -291,21 +297,17 @@ function renderProviders(){
         <button class="remove-btn" data-remove-provider="${pIndex}">Remove</button>
       </div>
       <div class="models-container"></div>
-      <button class="add-model-btn" data-add-model="${pIndex}">+ Add a model to ${provider.label}</button>
+      <button class="add-model-btn" data-add-model="${pIndex}">+ Add a raw model to ${provider.label}</button>
     `;
     const modelsContainer = card.querySelector('.models-container');
-    provider.models.forEach((model) => {
+    provider.models.forEach((model, mIndex) => {
       const row = document.createElement('div');
       row.className = 'model-row';
       row.innerHTML = `
-        <div class="toggle ${model.enabled ? 'on' : ''}"></div>
         <input type="text" value="${model.customName}" data-field="customName">
-        <span style="font-family:var(--font-m);font-size:11px;color:var(--muted)">${model.id}</span>
+        <span class="model-id">${model.id}</span>
+        <button class="x-btn" data-remove-model="${pIndex}:${mIndex}">✕</button>
       `;
-      row.querySelector('.toggle').onclick = (e) => {
-        model.enabled = !model.enabled;
-        e.currentTarget.classList.toggle('on');
-      };
       row.querySelector('input').oninput = (e) => { model.customName = e.target.value; };
       modelsContainer.appendChild(row);
     });
@@ -313,8 +315,17 @@ function renderProviders(){
   });
 
   list.querySelectorAll('[data-remove-provider]').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       modelConfig.providers.splice(Number(btn.dataset.removeProvider), 1);
+      await saveAll();
+      renderProviders();
+    };
+  });
+  list.querySelectorAll('[data-remove-model]').forEach(btn => {
+    btn.onclick = async () => {
+      const [pIndex, mIndex] = btn.dataset.removeModel.split(':').map(Number);
+      modelConfig.providers[pIndex].models.splice(mIndex, 1);
+      await saveAll();
       renderProviders();
     };
   });
@@ -329,108 +340,6 @@ function renderProviders(){
   list.appendChild(saveBtn);
 }
 
-async function saveAll(){
-  await fetch('/api/admin/models', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(modelConfig)
-  });
-}
-
-function renderLinkedModels(){
-  const list = document.getElementById('linkedList');
-  if (!list) return;
-  list.innerHTML = '';
-  if (!modelConfig.linkedModels.length) {
-    list.innerHTML = '<div class="sub">No linked models yet.</div>';
-    return;
-  }
-  modelConfig.linkedModels.forEach((linked, i) => {
-    const card = document.createElement('div');
-    card.className = 'linked-card';
-    const chatLabel = linked.chat ? findModelLabel(linked.chat) : null;
-    const imageLabel = linked.image ? findModelLabel(linked.image) : null;
-    card.innerHTML = `
-      <div class="provider-row">
-        <h3>${linked.name}</h3>
-        <button class="remove-btn" data-remove-linked="${i}">Remove</button>
-      </div>
-      <div class="capability-row"><span class="cap-name">Chat</span><span class="cap-value ${chatLabel ? '' : 'unset'}">${chatLabel || 'not set'}</span></div>
-      <div class="capability-row"><span class="cap-name">Image generation</span><span class="cap-value ${imageLabel ? '' : 'unset'}">${imageLabel || 'free default'}</span></div>
-      <div class="capability-row"><span class="cap-name">Video generation</span><span class="cap-value unset">not available yet</span></div>
-      <div class="capability-row"><span class="cap-name">Voice replies</span><span class="cap-value ${linked.tts ? '' : 'unset'}">${linked.tts ? 'on (browser voice)' : 'off'}</span></div>
-      <div class="toggle ${linked.enabled ? 'on' : ''}" style="margin-top:10px" data-toggle-linked="${i}"></div>
-    `;
-    list.appendChild(card);
-  });
-  list.querySelectorAll('[data-remove-linked]').forEach(btn => {
-    btn.onclick = async () => {
-      modelConfig.linkedModels.splice(Number(btn.dataset.removeLinked), 1);
-      await saveAll();
-      renderLinkedModels();
-    };
-  });
-  list.querySelectorAll('[data-toggle-linked]').forEach(el => {
-    el.onclick = async () => {
-      const i = Number(el.dataset.toggleLinked);
-      modelConfig.linkedModels[i].enabled = !modelConfig.linkedModels[i].enabled;
-      await saveAll();
-      renderLinkedModels();
-    };
-  });
-}
-
-function findModelLabel(ref){
-  const provider = modelConfig.providers.find(p => p.id === ref.providerId);
-  if (!provider) return null;
-  const model = provider.models.find(m => m.id === ref.modelId);
-  if (!model) return null;
-  return `${provider.label} — ${model.customName}`;
-}
-
-const linkedModal = document.getElementById('linkedModal');
-document.getElementById('addLinkedBtn').onclick = () => {
-  document.getElementById('linkedName').value = '';
-  document.getElementById('linkedTts').checked = false;
-
-  const chatSelect = document.getElementById('linkedChatSelect');
-  const imageSelect = document.getElementById('linkedImageSelect');
-  chatSelect.innerHTML = '<option value="">— none —</option>';
-  imageSelect.innerHTML = '<option value="">Use free default generator</option>';
-  flatModelOptions().forEach(opt => {
-    chatSelect.innerHTML += `<option value="${opt.value}">${opt.label}</option>`;
-    imageSelect.innerHTML += `<option value="${opt.value}">${opt.label}</option>`;
-  });
-
-  linkedModal.classList.add('open');
-};
-document.getElementById('cancelLinkedBtn').onclick = () => linkedModal.classList.remove('open');
-document.getElementById('confirmLinkedBtn').onclick = async () => {
-  const name = document.getElementById('linkedName').value.trim();
-  if (!name) return;
-  const chatVal = document.getElementById('linkedChatSelect').value;
-  const imageVal = document.getElementById('linkedImageSelect').value;
-  const tts = document.getElementById('linkedTts').checked;
-
-  const parseVal = (v) => {
-    if (!v) return null;
-    const [providerId, modelId] = v.split('::');
-    return { providerId, modelId };
-  };
-
-  modelConfig.linkedModels.push({
-    id: 'linked-' + Date.now(),
-    name,
-    enabled: true,
-    chat: parseVal(chatVal),
-    image: parseVal(imageVal),
-    video: null,
-    tts
-  });
-  await saveAll();
-  linkedModal.classList.remove('open');
-  renderLinkedModels();
-};
-
 const providerModal = document.getElementById('providerModal');
 document.getElementById('addProviderBtn').onclick = () => {
   document.getElementById('newProviderLabel').value = '';
@@ -438,11 +347,12 @@ document.getElementById('addProviderBtn').onclick = () => {
   providerModal.classList.add('open');
 };
 document.getElementById('cancelProviderBtn').onclick = () => providerModal.classList.remove('open');
-document.getElementById('confirmProviderBtn').onclick = () => {
+document.getElementById('confirmProviderBtn').onclick = async () => {
   const label = document.getElementById('newProviderLabel').value.trim();
   const apiKeyEnv = document.getElementById('newProviderEnv').value.trim();
   if (!label || !apiKeyEnv) return;
   modelConfig.providers.push({ id: label.toLowerCase().replace(/\s+/g,'-'), label, apiKeyEnv, models: [] });
+  await saveAll();
   providerModal.classList.remove('open');
   renderProviders();
 };
@@ -456,13 +366,153 @@ function openModelModal(pIndex){
   modelModal.classList.add('open');
 }
 document.getElementById('cancelModelBtn').onclick = () => modelModal.classList.remove('open');
-document.getElementById('confirmModelBtn').onclick = () => {
+document.getElementById('confirmModelBtn').onclick = async () => {
   const id = document.getElementById('newModelId').value.trim();
   const customName = document.getElementById('newModelName').value.trim() || id;
   if (!id || modelTargetProviderIndex === null) return;
-  modelConfig.providers[modelTargetProviderIndex].models.push({ id, customName, enabled: false, rules: '' });
+  modelConfig.providers[modelTargetProviderIndex].models.push({ id, customName, enabled: true, rules: '' });
+  await saveAll();
   modelModal.classList.remove('open');
   renderProviders();
+};
+
+function renderGroups(){
+  const list = document.getElementById('groupList');
+  list.innerHTML = '';
+  if (!modelConfig.linkedModels.length) {
+    list.innerHTML = '<div class="sub">No models yet — create one above.</div>';
+    return;
+  }
+  modelConfig.linkedModels.forEach((group, gIndex) => {
+    if (!group.capabilities) group.capabilities = [];
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    let capsHtml = '';
+    if (!group.capabilities.length) {
+      capsHtml = '<div class="cap-empty">No models added to this bundle yet.</div>';
+    } else {
+      group.capabilities.forEach((cap, cIndex) => {
+        capsHtml += `
+          <div class="cap-row">
+            <div class="cap-info">
+              <span class="cap-type">${cap.type}</span>
+              <span class="cap-target">${findModelLabel(cap) || '(missing)'}</span>
+            </div>
+            <button class="x-btn" data-remove-cap="${gIndex}:${cIndex}">✕</button>
+          </div>`;
+      });
+    }
+    card.innerHTML = `
+      <div class="group-head">
+        <h3>${group.name}</h3>
+        <div class="group-head-actions">
+          <button class="remove-btn" data-delete-group="${gIndex}">Delete</button>
+        </div>
+      </div>
+      ${capsHtml}
+      <button class="add-model-btn" data-add-cap="${gIndex}">+ Add a model to this bundle</button>
+      <div class="group-footer-row">
+        <span>Enabled</span>
+        <div class="toggle ${group.enabled ? 'on' : ''}" data-toggle-enabled="${gIndex}"></div>
+      </div>
+      <div class="group-footer-row">
+        <span>Voice replies (free browser voice)</span>
+        <div class="toggle ${group.tts ? 'on' : ''}" data-toggle-tts="${gIndex}"></div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll('[data-delete-group]').forEach(btn => {
+    btn.onclick = async () => {
+      modelConfig.linkedModels.splice(Number(btn.dataset.deleteGroup), 1);
+      await saveAll();
+      renderGroups();
+    };
+  });
+  list.querySelectorAll('[data-remove-cap]').forEach(btn => {
+    btn.onclick = async () => {
+      const [gIndex, cIndex] = btn.dataset.removeCap.split(':').map(Number);
+      modelConfig.linkedModels[gIndex].capabilities.splice(cIndex, 1);
+      await saveAll();
+      renderGroups();
+    };
+  });
+  list.querySelectorAll('[data-add-cap]').forEach(btn => {
+    btn.onclick = () => openCapModal(Number(btn.dataset.addCap));
+  });
+  list.querySelectorAll('[data-toggle-enabled]').forEach(el => {
+    el.onclick = async () => {
+      const i = Number(el.dataset.toggleEnabled);
+      modelConfig.linkedModels[i].enabled = !modelConfig.linkedModels[i].enabled;
+      await saveAll();
+      renderGroups();
+    };
+  });
+  list.querySelectorAll('[data-toggle-tts]').forEach(el => {
+    el.onclick = async () => {
+      const i = Number(el.dataset.toggleTts);
+      modelConfig.linkedModels[i].tts = !modelConfig.linkedModels[i].tts;
+      await saveAll();
+      renderGroups();
+    };
+  });
+}
+
+function findModelLabel(cap){
+  const provider = modelConfig.providers.find(p => p.id === cap.providerId);
+  if (!provider) return null;
+  const model = provider.models.find(m => m.id === cap.modelId);
+  if (!model) return null;
+  return `${provider.label} — ${model.customName}`;
+}
+
+const groupModal = document.getElementById('groupModal');
+document.getElementById('addGroupBtn').onclick = () => {
+  document.getElementById('groupName').value = '';
+  groupModal.classList.add('open');
+};
+document.getElementById('cancelGroupBtn').onclick = () => groupModal.classList.remove('open');
+document.getElementById('confirmGroupBtn').onclick = async () => {
+  const name = document.getElementById('groupName').value.trim();
+  if (!name) return;
+  modelConfig.linkedModels.push({
+    id: 'model-' + Date.now(),
+    name,
+    enabled: true,
+    tts: false,
+    capabilities: []
+  });
+  await saveAll();
+  groupModal.classList.remove('open');
+  renderGroups();
+};
+
+const capModal = document.getElementById('capModal');
+let capTargetGroupIndex = null;
+function openCapModal(gIndex){
+  capTargetGroupIndex = gIndex;
+  const select = document.getElementById('capModelSelect');
+  select.innerHTML = '';
+  const opts = flatModelOptions();
+  if (!opts.length) {
+    select.innerHTML = '<option value="">No raw models yet — add one in "Add APIs" first</option>';
+  } else {
+    opts.forEach(opt => { select.innerHTML += `<option value="${opt.value}">${opt.label}</option>`; });
+  }
+  document.getElementById('capType').value = 'chat';
+  capModal.classList.add('open');
+}
+document.getElementById('cancelCapBtn').onclick = () => capModal.classList.remove('open');
+document.getElementById('confirmCapBtn').onclick = async () => {
+  const val = document.getElementById('capModelSelect').value;
+  if (!val || capTargetGroupIndex === null) return;
+  const [providerId, modelId] = val.split('::');
+  const type = document.getElementById('capType').value;
+  modelConfig.linkedModels[capTargetGroupIndex].capabilities.push({ type, providerId, modelId });
+  await saveAll();
+  capModal.classList.remove('open');
+  renderGroups();
 };
 
 document.getElementById('saveRules').onclick = async () => {
