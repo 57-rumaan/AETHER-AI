@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { loadModelConfig } = require('../config/store');
 
+// GET /api/chat/models — public list for the picker dropdown.
+// Only "groups" (config.linkedModels) show up here now — a group can hold
+// just one model or several, so it covers both cases.
 router.get('/models', async (req, res) => {
   try {
     const config = await loadModelConfig();
     const list = [];
-    for (const provider of config.providers) {
-      for (const model of provider.models) {
-        if (model.enabled) list.push({ id: model.id, customName: model.customName });
-      }
+    for (const group of (config.linkedModels || [])) {
+      if (group.enabled) list.push({ id: group.id, customName: group.name, isLinked: true, ttsEnabled: !!group.tts });
     }
     res.json(list);
   } catch (err) {
@@ -18,6 +19,8 @@ router.get('/models', async (req, res) => {
   }
 });
 
+// POST /api/chat  { message, modelId, imageDataUrl? }
+// modelId is always a group id now.
 router.post('/', async (req, res) => {
   const { message, modelId, imageDataUrl } = req.body;
   if (!message && !imageDataUrl) return res.status(400).json({ error: 'message is required' });
@@ -30,33 +33,74 @@ router.post('/', async (req, res) => {
     return res.json({ reply: 'Could not reach the settings store. Check JSONBIN_BIN_ID / JSONBIN_API_KEY on the server.', model: 'system' });
   }
 
-  let target = null;
-  for (const provider of config.providers) {
-    for (const model of provider.models) {
-      if (!model.enabled) continue;
-      if (modelId ? model.id === modelId : !target) {
-        target = { provider, model };
-      }
-    }
+  const group = (config.linkedModels || []).find(g => g.id === modelId);
+  if (!group) {
+    return res.json({ reply: 'No AI model is selected yet. Create a group and add a chat model to it in the admin panel.', model: 'system' });
   }
-
-  if (!target) {
-    return res.json({ reply: 'No AI model is enabled yet. An admin needs to add and enable one in the admin panel.', model: 'system' });
+  const chatCap = (group.capabilities || []).find(c => c.type === 'chat');
+  if (!chatCap) {
+    return res.json({ reply: `"${group.name}" doesn't have a chat model in it yet — add one in the admin panel.`, model: 'system' });
   }
-
-  const apiKey = process.env[target.provider.apiKeyEnv];
+  const providerDef = config.providers.find(p => p.id === chatCap.providerId);
+  if (!providerDef) {
+    return res.json({ reply: 'The chat model in this group no longer exists — check the admin panel.', model: 'system' });
+  }
+  const apiKey = process.env[providerDef.apiKeyEnv];
   if (!apiKey) {
-    return res.json({ reply: `Model "${target.model.customName}" is enabled but its API key (${target.provider.apiKeyEnv}) isn't set on the server yet.`, model: 'system' });
+    return res.json({ reply: `"${group.name}" is set up but its API key (${providerDef.apiKeyEnv}) isn't set on the server yet.`, model: 'system' });
   }
+  const underlying = providerDef.models.find(m => m.id === chatCap.modelId);
+  const modelRules = underlying?.rules || '';
 
   try {
-    const reply = await callProvider(target.provider.id, apiKey, target.model.id, message, imageDataUrl, target.model.rules, config.globalRules);
-    res.json({ reply, model: target.model.customName });
+    const reply = await callProvider(providerDef.id, apiKey, chatCap.modelId, message, imageDataUrl, modelRules, config.globalRules);
+    res.json({ reply, model: group.name });
   } catch (err) {
     console.error(err);
     res.status(500).json({ reply: 'That model failed to respond. Try again or switch models.', model: 'system' });
   }
 });
+
+// POST /api/chat/generate-image  { linkedModelId, prompt }
+// Uses the group's own image-generation model if it has one; otherwise the
+// frontend falls back to the free default generator.
+router.post('/generate-image', async (req, res) => {
+  const { linkedModelId, prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: 'prompt is required' });
+
+  try {
+    const config = await loadModelConfig();
+    const group = (config.linkedModels || []).find(g => g.id === linkedModelId);
+    const imageCap = group && (group.capabilities || []).find(c => c.type === 'image');
+    if (!imageCap) return res.json({ fallback: true });
+
+    const providerDef = config.providers.find(p => p.id === imageCap.providerId);
+    if (!providerDef) return res.json({ fallback: true });
+    const apiKey = process.env[providerDef.apiKeyEnv];
+    if (!apiKey) return res.json({ fallback: true });
+
+    const url = await generateImage(providerDef.id, apiKey, imageCap.modelId, prompt);
+    if (!url) return res.json({ fallback: true });
+    res.json({ url });
+  } catch (err) {
+    console.error(err);
+    res.json({ fallback: true });
+  }
+});
+
+async function generateImage(providerId, apiKey, modelId, prompt) {
+  if (providerId === 'openai') {
+    const r = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: modelId, prompt, n: 1, size: '1024x1024' })
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.data?.[0]?.url || null;
+  }
+  return null;
+}
 
 function buildUserContent(message, imageDataUrl) {
   if (!imageDataUrl) return message || '';
