@@ -267,10 +267,29 @@ async function loadModels(){
 }
 
 async function saveAll(){
-  await fetch('/api/admin/models', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(modelConfig)
-  });
+  const statusEl = document.getElementById('groupSaveStatus');
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Saving…'; }
+  try {
+    const res = await fetch('/api/admin/models', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(modelConfig)
+    });
+    if (!res.ok) {
+      let msg = 'Save failed (status ' + res.status + ')';
+      try { const data = await res.json(); if (data.error) msg = 'Save failed: ' + data.error; } catch {}
+      if (statusEl) { statusEl.style.color = '#ff6b6b'; statusEl.textContent = msg; }
+      return false;
+    }
+    if (statusEl) {
+      statusEl.style.color = '#7ee787';
+      statusEl.textContent = 'Saved ✓';
+      setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 1500);
+    }
+    return true;
+  } catch (err) {
+    if (statusEl) { statusEl.style.color = '#ff6b6b'; statusEl.textContent = 'Save failed — could not reach the server.'; }
+    return false;
+  }
 }
 
 function flatModelOptions(){
@@ -315,13 +334,7 @@ function renderProviders(){
     list.appendChild(card);
   });
 
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'save-btn';
-  saveBtn.textContent = 'Save changes';
-  saveBtn.onclick = saveAll;
-  list.appendChild(saveBtn);
-
-  list.querySelectorAll('[data-delete-group]').forEach(btn => {
+  list.querySelectorAll('[data-remove-provider]').forEach(btn => {
     btn.onclick = async () => {
       modelConfig.providers.splice(Number(btn.dataset.removeProvider), 1);
       await saveAll();
@@ -429,6 +442,12 @@ function renderGroups(){
     `;
     list.appendChild(card);
   });
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'save-btn';
+  saveBtn.textContent = 'Save changes';
+  saveBtn.onclick = saveAll;
+  list.appendChild(saveBtn);
 
   list.querySelectorAll('[data-delete-group]').forEach(btn => {
     btn.onclick = async () => {
