@@ -315,7 +315,13 @@ function renderProviders(){
     list.appendChild(card);
   });
 
-  list.querySelectorAll('[data-remove-provider]').forEach(btn => {
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'save-btn';
+  saveBtn.textContent = 'Save changes';
+  saveBtn.onclick = saveAll;
+  list.appendChild(saveBtn);
+
+  list.querySelectorAll('[data-delete-group]').forEach(btn => {
     btn.onclick = async () => {
       modelConfig.providers.splice(Number(btn.dataset.removeProvider), 1);
       await saveAll();
