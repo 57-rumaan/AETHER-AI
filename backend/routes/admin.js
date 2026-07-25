@@ -15,6 +15,7 @@ function requireAdmin(req, res, next) {
   }
 }
 
+// POST /api/admin/login  { password }
 router.post('/login', async (req, res) => {
   const { password } = req.body;
   const ok = password && (await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH || ''));
@@ -39,6 +40,7 @@ router.post('/models', async (req, res) => {
     const current = await loadModelConfig();
     current.providers = req.body.providers;
     current.globalRules = req.body.globalRules;
+    current.linkedModels = req.body.linkedModels || current.linkedModels || [];
     await saveModelConfig(current);
     res.json({ ok: true });
   } catch (err) {
