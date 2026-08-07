@@ -383,13 +383,15 @@
 
 <div class="modal-backdrop" id="authModal">
   <div class="modal">
-    <div class="modal-tabs">
+    <div class="modal-tabs" id="authTabs">
       <button class="active" id="tabLogin">Log in</button>
       <button id="tabSignup">Sign up</button>
     </div>
     <h3 id="authModalTitle">Log in</h3>
-    <input type="text" id="authIdentifier" placeholder="Email or phone">
+    <p class="hint" id="authHint" style="display:none">Enter the 6-digit code we emailed you.</p>
+    <input type="text" id="authIdentifier" placeholder="Email address">
     <input type="password" id="authPassword" placeholder="Password">
+    <input type="text" id="authCode" placeholder="6-digit code" style="display:none" inputmode="numeric" maxlength="6">
     <div class="modal-error" id="authError"></div>
     <div class="modal-actions">
       <button id="cancelAuthBtn">Cancel</button>
