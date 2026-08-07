@@ -655,76 +655,120 @@ const authModal = document.getElementById('authModal');
 const authBtn = document.getElementById('authBtn');
 const authBtnLabel = document.getElementById('authBtnLabel');
 const authAvatar = document.getElementById('authAvatar');
+const authTabs = document.getElementById('authTabs');
 const tabLogin = document.getElementById('tabLogin');
 const tabSignup = document.getElementById('tabSignup');
 const authModalTitle = document.getElementById('authModalTitle');
+const authHint = document.getElementById('authHint');
+const authIdentifierInput = document.getElementById('authIdentifier');
+const authPasswordInput = document.getElementById('authPassword');
+const authCodeInput = document.getElementById('authCode');
 const confirmAuthBtn = document.getElementById('confirmAuthBtn');
 const authError = document.getElementById('authError');
 let authMode = 'login';
 let loggedInAs = null;
+let pendingSignupIdentifier = null;
+let pendingSignupPassword = null;
 
 function setAuthMode(mode){
   authMode = mode;
+  authError.style.display = 'none';
+  if (mode === 'verify') {
+    authTabs.style.display = 'none';
+    authModalTitle.textContent = 'Check your email';
+    authHint.style.display = 'block';
+    authIdentifierInput.style.display = 'none';
+    authPasswordInput.style.display = 'none';
+    authCodeInput.style.display = 'block';
+    authCodeInput.value = '';
+    confirmAuthBtn.textContent = 'Verify';
+    return;
+  }
+  authTabs.style.display = 'flex';
+  authHint.style.display = 'none';
+  authIdentifierInput.style.display = 'block';
+  authPasswordInput.style.display = 'block';
+  authCodeInput.style.display = 'none';
   tabLogin.classList.toggle('active', mode === 'login');
   tabSignup.classList.toggle('active', mode === 'signup');
   authModalTitle.textContent = mode === 'login' ? 'Log in' : 'Sign up';
-  confirmAuthBtn.textContent = mode === 'login' ? 'Log in' : 'Create account';
-  authError.style.display = 'none';
+  confirmAuthBtn.textContent = mode === 'login' ? 'Log in' : 'Send code';
 }
 tabLogin.onclick = () => setAuthMode('login');
 tabSignup.onclick = () => setAuthMode('signup');
 
 authBtn.onclick = () => {
   if (loggedInAs) return;
-  document.getElementById('authIdentifier').value = '';
-  document.getElementById('authPassword').value = '';
+  authIdentifierInput.value = '';
+  authPasswordInput.value = '';
   setAuthMode('login');
   authModal.classList.add('open');
 };
 document.getElementById('cancelAuthBtn').onclick = () => authModal.classList.remove('open');
 
+async function doLogin(identifier, password){
+  const res = await fetch('/api/auth/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ identifier, password })
+  });
+  if (!res.ok) return false;
+  loggedInAs = identifier;
+  authBtnLabel.textContent = identifier;
+  authAvatar.textContent = identifier.slice(0, 1).toUpperCase();
+  authModal.classList.remove('open');
+  return true;
+}
+
 confirmAuthBtn.onclick = async () => {
-  const identifier = document.getElementById('authIdentifier').value.trim();
-  const password = document.getElementById('authPassword').value;
   authError.style.display = 'none';
-  if (!identifier || !password) {
-    authError.textContent = 'Fill in both fields.';
-    authError.style.display = 'block';
+
+  if (authMode === 'login') {
+    const identifier = authIdentifierInput.value.trim();
+    const password = authPasswordInput.value;
+    if (!identifier || !password) {
+      authError.textContent = 'Fill in both fields.'; authError.style.display = 'block'; return;
+    }
+    const ok = await doLogin(identifier, password);
+    if (!ok) { authError.textContent = 'Wrong email or password.'; authError.style.display = 'block'; }
     return;
   }
-  const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ identifier, password })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      authError.textContent = data.error || 'Something went wrong.';
-      authError.style.display = 'block';
-      return;
+
+  if (authMode === 'signup') {
+    const identifier = authIdentifierInput.value.trim();
+    const password = authPasswordInput.value;
+    if (!identifier || !password) {
+      authError.textContent = 'Fill in both fields.'; authError.style.display = 'block'; return;
     }
-    if (authMode === 'signup') {
-      const loginRes = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
+    try {
+      const res = await fetch('/api/auth/send-code', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ identifier, password })
       });
-      if (!loginRes.ok) {
-        setAuthMode('login');
-        authError.textContent = 'Account created — please log in.';
-        authError.style.display = 'block';
-        return;
-      }
+      const data = await res.json();
+      if (!res.ok) { authError.textContent = data.error || 'Could not send code.'; authError.style.display = 'block'; return; }
+      pendingSignupIdentifier = identifier;
+      pendingSignupPassword = password;
+      setAuthMode('verify');
+    } catch (err) {
+      authError.textContent = 'Could not reach the server.'; authError.style.display = 'block';
     }
-    loggedInAs = identifier;
-    authBtnLabel.textContent = identifier;
-    authAvatar.textContent = identifier.slice(0, 1).toUpperCase();
-    authModal.classList.remove('open');
-  } catch (err) {
-    authError.textContent = 'Could not reach the server.';
-    authError.style.display = 'block';
+    return;
+  }
+
+  if (authMode === 'verify') {
+    const code = authCodeInput.value.trim();
+    if (!code) { authError.textContent = 'Enter the code.'; authError.style.display = 'block'; return; }
+    try {
+      const res = await fetch('/api/auth/verify-code', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ identifier: pendingSignupIdentifier, code })
+      });
+      const data = await res.json();
+      if (!res.ok) { authError.textContent = data.error || 'Wrong code.'; authError.style.display = 'block'; return; }
+      await doLogin(pendingSignupIdentifier, pendingSignupPassword);
+    } catch (err) {
+      authError.textContent = 'Could not reach the server.'; authError.style.display = 'block';
+    }
   }
 };
 
