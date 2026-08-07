@@ -4,9 +4,38 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { loadModelConfig, saveModelConfig } = require('../config/store');
 
-router.post('/signup', async (req, res) => {
+const pendingSignups = new Map();
+
+function generateCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function sendVerificationEmail(toEmail, code) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('RESEND_API_KEY is not set on the server.');
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      from: 'AETHER AI <onboarding@resend.dev>',
+      to: [toEmail],
+      subject: 'Your AETHER AI verification code',
+      html: `<p>Your verification code is:</p><h2 style="letter-spacing:4px">${code}</h2><p>This code expires in 10 minutes.</p>`
+    })
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    console.error('Resend send failed:', r.status, text.slice(0, 300));
+    throw new Error('Could not send the verification email.');
+  }
+}
+
+router.post('/send-code', async (req, res) => {
   const { identifier, password } = req.body;
   if (!identifier || !password) return res.status(400).json({ error: 'identifier and password required' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+    return res.status(400).json({ error: 'Only email sign-up is supported right now — enter a valid email.' });
+  }
   try {
     const config = await loadModelConfig();
     const users = config.users || [];
@@ -14,9 +43,38 @@ router.post('/signup', async (req, res) => {
       return res.status(409).json({ error: 'account already exists' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    users.push({ id: Date.now().toString(), identifier, passwordHash, createdAt: new Date().toISOString() });
+    const code = generateCode();
+    pendingSignups.set(identifier, { passwordHash, code, expiresAt: Date.now() + 10 * 60 * 1000 });
+    await sendVerificationEmail(identifier, code);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Could not send verification code.' });
+  }
+});
+
+router.post('/verify-code', async (req, res) => {
+  const { identifier, code } = req.body;
+  const pending = pendingSignups.get(identifier);
+  if (!pending) return res.status(400).json({ error: 'No signup in progress for this email — start again.' });
+  if (Date.now() > pending.expiresAt) {
+    pendingSignups.delete(identifier);
+    return res.status(400).json({ error: 'Code expired — start signup again.' });
+  }
+  if (code !== pending.code) {
+    return res.status(400).json({ error: 'Wrong code.' });
+  }
+  try {
+    const config = await loadModelConfig();
+    const users = config.users || [];
+    if (users.find(u => u.identifier === identifier)) {
+      pendingSignups.delete(identifier);
+      return res.status(409).json({ error: 'account already exists' });
+    }
+    users.push({ id: Date.now().toString(), identifier, passwordHash: pending.passwordHash, createdAt: new Date().toISOString() });
     config.users = users;
     await saveModelConfig(config);
+    pendingSignups.delete(identifier);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
