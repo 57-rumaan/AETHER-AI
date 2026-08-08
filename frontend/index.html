@@ -610,7 +610,21 @@ function speakText(text){
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str;
-  return div.innerHTML.replace(/\n/g, '<br>');
+  return div.innerHTML;
+}
+
+// Turns basic markdown (bold, italics, inline code, code blocks, lists) into HTML.
+// Everything is escaped first so the model's own text can never inject real HTML.
+function formatAiText(raw){
+  let text = escapeHtml(raw);
+  text = text.replace(/```([\s\S]*?)```/g, (m, code) => `<pre><code>${code.trim()}</code></pre>`);
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+  text = text.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
 }
 
 const imageModal = document.getElementById('imageModal');
