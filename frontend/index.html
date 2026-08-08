@@ -513,10 +513,22 @@ function addMessage(role, html, modelTag){
     <div class="avatar">${role === 'user' ? 'You' : 'AI'}</div>
     <div class="msg-bubble">
       ${role === 'ai' && modelTag ? `<div class="msg-model-tag">${modelTag}</div>` : ''}
-      ${html}
+      <div class="msg-text">${html}</div>
+      ${role === 'ai' ? '<button class="copy-btn">Copy</button>' : ''}
     </div>`;
+  if (role === 'ai') {
+    const copyBtn = row.querySelector('.copy-btn');
+    copyBtn.onclick = () => {
+      const text = row.querySelector('.msg-text').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200);
+      });
+    };
+  }
   messages.appendChild(row);
   document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+  saveChatHistory();
 }
 
 let pendingAttachments = [];
