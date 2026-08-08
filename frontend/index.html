@@ -593,7 +593,7 @@ async function sendMessage(){
     });
     const data = await res.json();
     const replyText = data.reply || 'No response.';
-    addMessage('ai', escapeHtml(replyText), data.model);
+    addMessage('ai', formatAiText(replyText), data.model);
     if (selectedTtsEnabled) speakText(replyText);
   } catch (err) {
     addMessage('ai', 'Could not reach the backend. Try again in a moment.', 'system');
