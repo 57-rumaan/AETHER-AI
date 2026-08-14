@@ -618,6 +618,7 @@ function loadChatHistory(){
 
 function addMessage(role, html, modelTag){
   emptyState.style.display = 'none';
+  const isLoading = modelTag === null;
   const row = document.createElement('div');
   row.className = 'msg ' + role;
   row.innerHTML = `
@@ -625,12 +626,12 @@ function addMessage(role, html, modelTag){
     <div class="msg-bubble">
       ${role === 'ai' && modelTag ? `<div class="msg-model-tag">${modelTag}</div>` : ''}
       <div class="msg-text">${html}</div>
-      ${role === 'ai' ? '<button class="copy-btn">Copy</button>' : ''}
+      ${role === 'ai' && !isLoading ? '<button class="copy-btn">Copy</button>' : ''}
     </div>`;
   messages.appendChild(row);
-  if (role === 'ai') attachCopyHandlers();
+  if (role === 'ai' && !isLoading) attachCopyHandlers();
   document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
-  saveChatHistory();
+  if (!isLoading) saveChatHistory();
 }
 
 document.getElementById('newChatBtn').onclick = () => {
@@ -704,6 +705,9 @@ async function sendMessage(){
     if (!text) return;
   }
 
+  addMessage('ai', '<span class="typing-dots"><span></span><span></span><span></span></span>', null);
+  const loadingRow = messages.lastElementChild;
+
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -717,9 +721,11 @@ async function sendMessage(){
     });
     const data = await res.json();
     const replyText = data.reply || 'No response.';
+    loadingRow.remove();
     addMessage('ai', formatAiText(replyText), data.model);
     if (selectedTtsEnabled) speakText(replyText);
   } catch (err) {
+    loadingRow.remove();
     addMessage('ai', 'Could not reach the backend. Try again in a moment.', 'system');
   }
 }
