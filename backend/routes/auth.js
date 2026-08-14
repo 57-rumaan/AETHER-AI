@@ -101,6 +101,20 @@ router.post('/login', async (req, res) => {
 });
 // GET /api/auth/me — checks the login cookie and confirms who's logged in.
 router.post('/logout', (req, res) => {
+  router.post('/delete-account', async (req, res) => {
+  const token = req.cookies?.session;
+  if (!token) return res.status(401).json({ error: 'not logged in' });
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const config = await loadModelConfig();
+    config.users = (config.users || []).filter(u => u.id !== payload.userId);
+    await saveModelConfig(config);
+    res.clearCookie('session').json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not delete account.' });
+  }
+});
   res.clearCookie('session').json({ ok: true });
 });
 router.get('/me', async (req, res) => {
