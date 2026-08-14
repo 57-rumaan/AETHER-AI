@@ -592,10 +592,37 @@ function renderChatList(){
   chats.forEach(chat => {
     const item = document.createElement('div');
     item.className = 'chat-item' + (chat.id === activeChatId ? ' active' : '');
-    item.textContent = chat.title || 'New chat';
-    item.onclick = () => switchChat(chat.id);
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.justifyContent = 'space-between';
+    item.style.gap = '6px';
+    item.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(chat.title || 'New chat')}</span><button class="chat-delete-btn" title="Delete">✕</button>`;
+    item.querySelector('span').onclick = () => switchChat(chat.id);
+    item.querySelector('.chat-delete-btn').onclick = (e) => {
+      e.stopPropagation();
+      deleteChat(chat.id);
+    };
     chatListEl.appendChild(item);
   });
+}
+
+function deleteChat(id){
+  let chats = loadChats().filter(c => c.id !== id);
+  saveChats(chats);
+  if (id === activeChatId) {
+    if (chats.length) {
+      activeChatId = chats[0].id;
+      messages.innerHTML = chats[0].html;
+      emptyState.style.display = 'none';
+      attachCopyHandlers();
+    } else {
+      activeChatId = createChatId();
+      messages.innerHTML = '';
+      emptyState.style.display = 'flex';
+    }
+    localStorage.setItem('aetherActiveChatId', activeChatId);
+  }
+  renderChatList();
 }
 
 function switchChat(id){
