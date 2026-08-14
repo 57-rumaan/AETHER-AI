@@ -887,20 +887,39 @@ function setAuthMode(mode){
 tabLogin.onclick = () => setAuthMode('login');
 tabSignup.onclick = () => setAuthMode('signup');
 
-authBtn.onclick = async () => {
+const settingsModal = document.getElementById('settingsModal');
+
+authBtn.onclick = () => {
   if (loggedInAs) {
-    if (confirm('Log out of ' + loggedInAs + '?')) {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      loggedInAs = null;
-      authBtnLabel.textContent = 'Log in / Sign up';
-      authAvatar.textContent = '?';
-    }
+    document.getElementById('settingsEmail').textContent = 'Signed in as ' + loggedInAs;
+    settingsModal.classList.add('open');
     return;
   }
   authIdentifierInput.value = '';
   authPasswordInput.value = '';
   setAuthMode('login');
   authModal.classList.add('open');
+};
+
+document.getElementById('cancelSettingsBtn').onclick = () => settingsModal.classList.remove('open');
+
+document.getElementById('settingsLogoutBtn').onclick = async () => {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  loggedInAs = null;
+  authBtnLabel.textContent = 'Log in / Sign up';
+  authAvatar.textContent = '?';
+  settingsModal.classList.remove('open');
+};
+
+document.getElementById('settingsDeleteBtn').onclick = async () => {
+  if (!confirm('Delete your account permanently? This cannot be undone.')) return;
+  const res = await fetch('/api/auth/delete-account', { method: 'POST' });
+  if (res.ok) {
+    loggedInAs = null;
+    authBtnLabel.textContent = 'Log in / Sign up';
+    authAvatar.textContent = '?';
+    settingsModal.classList.remove('open');
+  }
 };
 document.getElementById('cancelAuthBtn').onclick = () => authModal.classList.remove('open');
 
