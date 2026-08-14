@@ -99,7 +99,21 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Could not log in — storage error.' });
   }
 });
-
+// GET /api/auth/me — checks the login cookie and confirms who's logged in.
+router.get('/me', async (req, res) => {
+  const token = req.cookies?.session;
+  if (!token) return res.status(401).json({ error: 'not logged in' });
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const config = await loadModelConfig();
+    const users = config.users || [];
+    const user = users.find(u => u.id === payload.userId);
+    if (!user) return res.status(401).json({ error: 'not logged in' });
+    res.json({ identifier: user.identifier });
+  } catch {
+    res.status(401).json({ error: 'session expired' });
+  }
+});
 router.post('/oauth/:provider', (req, res) => {
   res.status(501).json({ error: `${req.params.provider} OAuth not wired up yet.` });
 });
