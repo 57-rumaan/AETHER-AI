@@ -204,6 +204,11 @@
     font-size:11px;padding:4px 10px;border-radius:7px;
   }
   .copy-btn:hover{border-color:var(--accent-dim);color:var(--text-muted);}
+  .typing-dots{display:inline-flex;gap:4px;padding:4px 0;}
+  .typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--text-faint);animation:typingBounce 1.2s infinite ease-in-out;}
+  .typing-dots span:nth-child(2){animation-delay:.2s;}
+  .typing-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes typingBounce{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-4px);opacity:1;}}
   .msg-text pre{background:var(--surface-raised);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;margin:6px 0;}
   .msg-text code{font-family:var(--font-mono);font-size:13px;}
   .msg-text ul{margin:6px 0 6px 18px;}
