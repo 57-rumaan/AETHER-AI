@@ -532,9 +532,7 @@ function formatAiText(raw){
 }
 
 // ---- Chat history (saved in this browser only) ----
-function saveChatHistory(){
-  try { localStorage.setItem('aetherChatHistory', messages.innerHTML); } catch (e) {}
-}
+// ---- Multi-chat history (each conversation saved separately in this browser) ----
 function attachCopyHandlers(){
   messages.querySelectorAll('.msg.ai').forEach(row => {
     const copyBtn = row.querySelector('.copy-btn');
@@ -549,15 +547,73 @@ function attachCopyHandlers(){
     };
   });
 }
+
+function loadChats(){
+  try { return JSON.parse(localStorage.getItem('aetherChats') || '[]'); } catch (e) { return []; }
+}
+function saveChats(chats){
+  try { localStorage.setItem('aetherChats', JSON.stringify(chats)); } catch (e) {}
+}
+function createChatId(){ return 'chat-' + Date.now(); }
+let activeChatId = localStorage.getItem('aetherActiveChatId') || createChatId();
+
+function saveChatHistory(){
+  if (!messages.innerHTML.trim()) return; // nothing to save yet
+  const chats = loadChats();
+  const firstUserMsg = messages.querySelector('.msg.user .msg-text');
+  const title = firstUserMsg ? firstUserMsg.innerText.slice(0, 40) : 'New chat';
+  let chat = chats.find(c => c.id === activeChatId);
+  if (!chat) {
+    chat = { id: activeChatId, title, savedAt: Date.now(), html: messages.innerHTML };
+    chats.unshift(chat);
+  } else {
+    chat.html = messages.innerHTML;
+    chat.title = title;
+    chat.savedAt = Date.now();
+  }
+  saveChats(chats);
+  localStorage.setItem('aetherActiveChatId', activeChatId);
+  renderChatList();
+}
+
+function renderChatList(){
+  const chatListEl = document.getElementById('chatList');
+  const chats = loadChats().sort((a, b) => b.savedAt - a.savedAt);
+  chatListEl.innerHTML = '';
+  if (!chats.length) {
+    chatListEl.innerHTML = '<div style="padding:8px 16px;color:var(--text-faint);font-size:12.5px;">No chats yet</div>';
+    return;
+  }
+  chats.forEach(chat => {
+    const item = document.createElement('div');
+    item.className = 'chat-item' + (chat.id === activeChatId ? ' active' : '');
+    item.textContent = chat.title || 'New chat';
+    item.onclick = () => switchChat(chat.id);
+    chatListEl.appendChild(item);
+  });
+}
+
+function switchChat(id){
+  if (id === activeChatId) { closeSidebar(); return; }
+  saveChatHistory();
+  activeChatId = id;
+  localStorage.setItem('aetherActiveChatId', id);
+  const chat = loadChats().find(c => c.id === id);
+  messages.innerHTML = chat ? chat.html : '';
+  emptyState.style.display = messages.innerHTML.trim() ? 'none' : 'flex';
+  attachCopyHandlers();
+  renderChatList();
+  closeSidebar();
+}
+
 function loadChatHistory(){
-  try {
-    const saved = localStorage.getItem('aetherChatHistory');
-    if (saved) {
-      messages.innerHTML = saved;
-      emptyState.style.display = 'none';
-      attachCopyHandlers();
-    }
-  } catch (e) {}
+  const chat = loadChats().find(c => c.id === activeChatId);
+  if (chat) {
+    messages.innerHTML = chat.html;
+    emptyState.style.display = 'none';
+    attachCopyHandlers();
+  }
+  renderChatList();
 }
 
 function addMessage(role, html, modelTag){
