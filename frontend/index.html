@@ -634,9 +634,12 @@ function addMessage(role, html, modelTag){
 }
 
 document.getElementById('newChatBtn').onclick = () => {
+  saveChatHistory();
+  activeChatId = createChatId();
+  localStorage.setItem('aetherActiveChatId', activeChatId);
   messages.innerHTML = '';
   emptyState.style.display = 'flex';
-  localStorage.removeItem('aetherChatHistory');
+  renderChatList();
   closeSidebar();
 };
 
