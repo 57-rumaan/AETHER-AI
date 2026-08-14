@@ -418,3 +418,441 @@
     </div>
   </div>
         </div>
+<div class="modal-backdrop" id="videoModal">
+  <div class="modal">
+    <h3>Video generation</h3>
+    <p class="hint">There isn't a reliable free video-generation API yet — every option that exists needs a paid key. Once you add one in the admin panel (under a video provider), this button will use it. For now this is a placeholder so it doesn't fail silently.</p>
+    <div class="modal-actions">
+      <button class="primary" id="closeVideoBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Sidebar ----
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+function openSidebar(){ sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); }
+function closeSidebar(){ sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); }
+document.getElementById('hamburgerBtn').onclick = openSidebar;
+document.getElementById('closeSidebarBtn').onclick = closeSidebar;
+sidebarBackdrop.onclick = closeSidebar;
+
+const plusBtn = document.getElementById('plusBtn');
+const plusMenu = document.getElementById('plusMenu');
+plusBtn.onclick = (e) => { e.stopPropagation(); plusMenu.classList.toggle('open'); };
+document.addEventListener('click', () => plusMenu.classList.remove('open'));
+
+// ---- Model picker ----
+const modelPicker = document.getElementById('modelPicker');
+const modelDropdown = document.getElementById('modelDropdown');
+const modelPickerBadge = document.getElementById('modelPickerBadge');
+let selectedModelId = null;
+let selectedIsLinked = false;
+let selectedTtsEnabled = false;
+let availableModels = [];
+
+async function loadModelList(){
+  try {
+    const res = await fetch('/api/chat/models');
+    availableModels = await res.json();
+  } catch (err) {
+    availableModels = [];
+  }
+  if (availableModels.length && !selectedModelId) {
+    selectModel(availableModels[0].id, availableModels[0].customName, availableModels[0].isLinked, availableModels[0].ttsEnabled);
+  }
+  if (!availableModels.length) {
+    modelPickerBadge.textContent = 'no models';
+  }
+  renderModelDropdown();
+}
+
+function renderModelDropdown(){
+  modelDropdown.innerHTML = '';
+  if (!availableModels.length) {
+    modelDropdown.innerHTML = '<div class="empty">No models enabled yet — add one in /admin</div>';
+    return;
+  }
+  availableModels.forEach(m => {
+    const btn = document.createElement('button');
+    btn.textContent = m.customName + (m.isLinked ? ' 🔗' : '');
+    btn.className = selectedModelId === m.id ? 'active' : '';
+    btn.onclick = (e) => { e.stopPropagation(); selectModel(m.id, m.customName, m.isLinked, m.ttsEnabled); };
+    modelDropdown.appendChild(btn);
+  });
+}
+
+function selectModel(id, label, isLinked, ttsEnabled){
+  selectedModelId = id;
+  selectedIsLinked = !!isLinked;
+  selectedTtsEnabled = !!ttsEnabled;
+  modelPickerBadge.textContent = label;
+  modelDropdown.classList.remove('open');
+  renderModelDropdown();
+}
+
+modelPicker.onclick = (e) => {
+  e.stopPropagation();
+  modelDropdown.classList.toggle('open');
+};
+document.addEventListener('click', () => modelDropdown.classList.remove('open'));
+loadModelList();
+
+// ---- Chat ----
+const input = document.getElementById('input');
+const messages = document.getElementById('messages');
+const emptyState = document.getElementById('emptyState');
+const sendBtn = document.getElementById('sendBtn');
+
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+});
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+sendBtn.onclick = sendMessage;
+
+// ---- Text escaping + AI markdown formatting ----
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatAiText(raw){
+  let text = escapeHtml(raw);
+  text = text.replace(/```([\s\S]*?)```/g, (m, code) => `<pre><code>${code.trim()}</code></pre>`);
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+  text = text.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+// ---- Chat history (saved in this browser only) ----
+function saveChatHistory(){
+  try { localStorage.setItem('aetherChatHistory', messages.innerHTML); } catch (e) {}
+}
+function attachCopyHandlers(){
+  messages.querySelectorAll('.msg.ai').forEach(row => {
+    const copyBtn = row.querySelector('.copy-btn');
+    if (!copyBtn || copyBtn.dataset.bound) return;
+    copyBtn.dataset.bound = '1';
+    copyBtn.onclick = () => {
+      const text = row.querySelector('.msg-text').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200);
+      });
+    };
+  });
+}
+function loadChatHistory(){
+  try {
+    const saved = localStorage.getItem('aetherChatHistory');
+    if (saved) {
+      messages.innerHTML = saved;
+      emptyState.style.display = 'none';
+      attachCopyHandlers();
+    }
+  } catch (e) {}
+}
+
+function addMessage(role, html, modelTag){
+  emptyState.style.display = 'none';
+  const row = document.createElement('div');
+  row.className = 'msg ' + role;
+  row.innerHTML = `
+    <div class="avatar">${role === 'user' ? 'You' : 'AI'}</div>
+    <div class="msg-bubble">
+      ${role === 'ai' && modelTag ? `<div class="msg-model-tag">${modelTag}</div>` : ''}
+      <div class="msg-text">${html}</div>
+      ${role === 'ai' ? '<button class="copy-btn">Copy</button>' : ''}
+    </div>`;
+  messages.appendChild(row);
+  if (role === 'ai') attachCopyHandlers();
+  document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+  saveChatHistory();
+}
+
+document.getElementById('newChatBtn').onclick = () => {
+  messages.innerHTML = '';
+  emptyState.style.display = 'flex';
+  localStorage.removeItem('aetherChatHistory');
+  closeSidebar();
+};
+
+// ---- Attachments (files/photos) ----
+let pendingAttachments = [];
+const attachmentRow = document.getElementById('attachmentRow');
+
+function renderAttachments(){
+  attachmentRow.innerHTML = '';
+  attachmentRow.classList.toggle('show', pendingAttachments.length > 0);
+  pendingAttachments.forEach((att, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'attachment-chip';
+    chip.innerHTML = `${att.isImage ? `<img src="${att.dataUrl}">` : '📄'} <span>${escapeHtml(att.name)}</span> <button data-i="${i}">✕</button>`;
+    chip.querySelector('button').onclick = () => { pendingAttachments.splice(i, 1); renderAttachments(); };
+    attachmentRow.appendChild(chip);
+  });
+}
+
+function handleFileSelected(file, isImage){
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingAttachments.push({ name: file.name, isImage, dataUrl: reader.result });
+    renderAttachments();
+  };
+  reader.readAsDataURL(file);
+}
+
+const fileInput = document.getElementById('fileInput');
+const photoInput = document.getElementById('photoInput');
+document.getElementById('addFileBtn').onclick = () => { plusMenu.classList.remove('open'); fileInput.click(); };
+document.getElementById('addPhotoBtn').onclick = () => { plusMenu.classList.remove('open'); photoInput.click(); };
+fileInput.onchange = () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0], false); fileInput.value = ''; };
+photoInput.onchange = () => { if (photoInput.files[0]) handleFileSelected(photoInput.files[0], true); photoInput.value = ''; };
+
+async function sendMessage(){
+  const text = input.value.trim();
+  if (!text && !pendingAttachments.length) return;
+
+  let userHtml = text ? escapeHtml(text).replace(/\n/g,'<br>') : '';
+  pendingAttachments.forEach(att => {
+    if (att.isImage) userHtml += `<img class="attached-preview" src="${att.dataUrl}">`;
+    else userHtml += `<div style="margin-top:6px;font-size:12.5px;opacity:.8">📄 ${escapeHtml(att.name)}</div>`;
+  });
+  addMessage('user', userHtml || '(attachment)');
+
+  const pendingAttachmentsSnapshot = pendingAttachments.slice();
+  input.value = ''; input.style.height = 'auto';
+  pendingAttachments = [];
+  renderAttachments();
+
+  if (!selectedModelId) {
+    addMessage('ai', 'No AI model is enabled yet. Add and enable one in the admin panel.', 'system');
+    return;
+  }
+
+  const imageAttachment = pendingAttachmentsSnapshot.find(a => a.isImage);
+  const nonImageAttachment = pendingAttachmentsSnapshot.find(a => !a.isImage);
+
+  if (nonImageAttachment && !imageAttachment) {
+    addMessage('ai', "I've attached that, but this model can only read images right now, not general files (docs/PDFs need a separate setup). Try attaching a photo instead, or just ask your question as text.", 'system');
+    if (!text) return;
+  }
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message: text,
+        modelId: selectedModelId,
+        isLinked: selectedIsLinked,
+        imageDataUrl: imageAttachment ? imageAttachment.dataUrl : undefined
+      })
+    });
+    const data = await res.json();
+    const replyText = data.reply || 'No response.';
+    addMessage('ai', formatAiText(replyText), data.model);
+    if (selectedTtsEnabled) speakText(replyText);
+  } catch (err) {
+    addMessage('ai', 'Could not reach the backend. Try again in a moment.', 'system');
+  }
+}
+
+function speakText(text){
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  window.speechSynthesis.speak(utterance);
+}
+
+// ---- Image generation ----
+const imageModal = document.getElementById('imageModal');
+document.getElementById('generateImageBtn').onclick = () => {
+  plusMenu.classList.remove('open');
+  document.getElementById('imagePrompt').value = '';
+  imageModal.classList.add('open');
+};
+document.getElementById('cancelImageBtn').onclick = () => imageModal.classList.remove('open');
+document.getElementById('confirmImageBtn').onclick = async () => {
+  const prompt = document.getElementById('imagePrompt').value.trim();
+  if (!prompt) return;
+  imageModal.classList.remove('open');
+  addMessage('user', escapeHtml(prompt));
+  addMessage('ai', 'Generating…', 'Image generator');
+  const loadingRow = messages.lastElementChild;
+
+  let url = null;
+  if (selectedIsLinked) {
+    try {
+      const res = await fetch('/api/chat/generate-image', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ linkedModelId: selectedModelId, prompt })
+      });
+      const data = await res.json();
+      if (data.url) url = data.url;
+    } catch (err) { /* falls through to the free default below */ }
+  }
+  if (!url) {
+    url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
+  }
+  loadingRow.remove();
+  addMessage('ai', `<img class="generated" src="${url}" alt="generated image">`, 'Image generator');
+};
+
+// ---- Video generation placeholder ----
+const videoModal = document.getElementById('videoModal');
+document.getElementById('generateVideoBtn').onclick = () => { plusMenu.classList.remove('open'); videoModal.classList.add('open'); };
+document.getElementById('closeVideoBtn').onclick = () => videoModal.classList.remove('open');
+
+// ---- Auth (login / signup with email verification code) ----
+const authModal = document.getElementById('authModal');
+const authBtn = document.getElementById('authBtn');
+const authBtnLabel = document.getElementById('authBtnLabel');
+const authAvatar = document.getElementById('authAvatar');
+const authTabs = document.getElementById('authTabs');
+const tabLogin = document.getElementById('tabLogin');
+const tabSignup = document.getElementById('tabSignup');
+const authModalTitle = document.getElementById('authModalTitle');
+const authHint = document.getElementById('authHint');
+const authIdentifierInput = document.getElementById('authIdentifier');
+const authPasswordInput = document.getElementById('authPassword');
+const authCodeInput = document.getElementById('authCode');
+const confirmAuthBtn = document.getElementById('confirmAuthBtn');
+const authError = document.getElementById('authError');
+let authMode = 'login';
+let loggedInAs = null;
+let pendingSignupIdentifier = null;
+let pendingSignupPassword = null;
+
+function setAuthMode(mode){
+  authMode = mode;
+  authError.style.display = 'none';
+  if (mode === 'verify') {
+    authTabs.style.display = 'none';
+    authModalTitle.textContent = 'Check your email';
+    authHint.style.display = 'block';
+    authIdentifierInput.style.display = 'none';
+    authPasswordInput.style.display = 'none';
+    authCodeInput.style.display = 'block';
+    authCodeInput.value = '';
+    confirmAuthBtn.textContent = 'Verify';
+    return;
+  }
+  authTabs.style.display = 'flex';
+  authHint.style.display = 'none';
+  authIdentifierInput.style.display = 'block';
+  authPasswordInput.style.display = 'block';
+  authCodeInput.style.display = 'none';
+  tabLogin.classList.toggle('active', mode === 'login');
+  tabSignup.classList.toggle('active', mode === 'signup');
+  authModalTitle.textContent = mode === 'login' ? 'Log in' : 'Sign up';
+  confirmAuthBtn.textContent = mode === 'login' ? 'Log in' : 'Send code';
+}
+tabLogin.onclick = () => setAuthMode('login');
+tabSignup.onclick = () => setAuthMode('signup');
+
+authBtn.onclick = () => {
+  if (loggedInAs) return;
+  authIdentifierInput.value = '';
+  authPasswordInput.value = '';
+  setAuthMode('login');
+  authModal.classList.add('open');
+};
+document.getElementById('cancelAuthBtn').onclick = () => authModal.classList.remove('open');
+
+async function doLogin(identifier, password){
+  const res = await fetch('/api/auth/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ identifier, password })
+  });
+  if (!res.ok) return false;
+  loggedInAs = identifier;
+  authBtnLabel.textContent = identifier;
+  authAvatar.textContent = identifier.slice(0, 1).toUpperCase();
+  authModal.classList.remove('open');
+  return true;
+}
+
+confirmAuthBtn.onclick = async () => {
+  authError.style.display = 'none';
+
+  if (authMode === 'login') {
+    const identifier = authIdentifierInput.value.trim();
+    const password = authPasswordInput.value;
+    if (!identifier || !password) {
+      authError.textContent = 'Fill in both fields.'; authError.style.display = 'block'; return;
+    }
+    const ok = await doLogin(identifier, password);
+    if (!ok) { authError.textContent = 'Wrong email or password.'; authError.style.display = 'block'; }
+    return;
+  }
+
+  if (authMode === 'signup') {
+    const identifier = authIdentifierInput.value.trim();
+    const password = authPasswordInput.value;
+    if (!identifier || !password) {
+      authError.textContent = 'Fill in both fields.'; authError.style.display = 'block'; return;
+    }
+    try {
+      const res = await fetch('/api/auth/send-code', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ identifier, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { authError.textContent = data.error || 'Could not send code.'; authError.style.display = 'block'; return; }
+      pendingSignupIdentifier = identifier;
+      pendingSignupPassword = password;
+      setAuthMode('verify');
+    } catch (err) {
+      authError.textContent = 'Could not reach the server.'; authError.style.display = 'block';
+    }
+    return;
+  }
+
+  if (authMode === 'verify') {
+    const code = authCodeInput.value.trim();
+    if (!code) { authError.textContent = 'Enter the code.'; authError.style.display = 'block'; return; }
+    try {
+      const res = await fetch('/api/auth/verify-code', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ identifier: pendingSignupIdentifier, code })
+      });
+      const data = await res.json();
+      if (!res.ok) { authError.textContent = data.error || 'Wrong code.'; authError.style.display = 'block'; return; }
+      await doLogin(pendingSignupIdentifier, pendingSignupPassword);
+    } catch (err) {
+      authError.textContent = 'Could not reach the server.'; authError.style.display = 'block';
+    }
+  }
+};
+
+// ---- Mic (voice input) ----
+const micBtn = document.getElementById('micBtn');
+let recognizing = false, recognition;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.onresult = (e) => { input.value += e.results[0][0].transcript; };
+  recognition.onend = () => { recognizing = false; micBtn.classList.remove('recording'); };
+}
+micBtn.onclick = () => {
+  if (!recognition) { alert('Voice input not supported in this browser.'); return; }
+  if (recognizing) { recognition.stop(); return; }
+  recognizing = true; micBtn.classList.add('recording'); recognition.start();
+};
+
+loadChatHistory();
+</script>
+</body>
+</html>
