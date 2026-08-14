@@ -100,6 +100,9 @@ router.post('/login', async (req, res) => {
   }
 });
 // GET /api/auth/me — checks the login cookie and confirms who's logged in.
+router.post('/logout', (req, res) => {
+  res.clearCookie('session').json({ ok: true });
+});
 router.get('/me', async (req, res) => {
   const token = req.cookies?.session;
   if (!token) return res.status(401).json({ error: 'not logged in' });
