@@ -649,6 +649,13 @@ function loadChatHistory(){
   }
   renderChatList();
 }
+  document.querySelectorAll('.suggestion-chip').forEach(chip => {
+  chip.onclick = () => {
+    input.value = chip.textContent;
+    input.focus();
+    input.dispatchEvent(new Event('input'));
+  };
+});
 
 function addMessage(role, html, modelTag){
   emptyState.style.display = 'none';
