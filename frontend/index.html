@@ -855,6 +855,7 @@ const authPasswordInput = document.getElementById('authPassword');
 const authCodeInput = document.getElementById('authCode');
 const confirmAuthBtn = document.getElementById('confirmAuthBtn');
 const authError = document.getElementById('authError');
+const settingsModal = document.getElementById('settingsModal');
 let authMode = 'login';
 let loggedInAs = null;
 let pendingSignupIdentifier = null;
@@ -887,8 +888,6 @@ function setAuthMode(mode){
 tabLogin.onclick = () => setAuthMode('login');
 tabSignup.onclick = () => setAuthMode('signup');
 
-const settingsModal = document.getElementById('settingsModal');
-
 authBtn.onclick = () => {
   if (loggedInAs) {
     document.getElementById('settingsEmail').textContent = 'Signed in as ' + loggedInAs;
@@ -900,6 +899,7 @@ authBtn.onclick = () => {
   setAuthMode('login');
   authModal.classList.add('open');
 };
+document.getElementById('cancelAuthBtn').onclick = () => authModal.classList.remove('open');
 
 document.getElementById('cancelSettingsBtn').onclick = () => settingsModal.classList.remove('open');
 
@@ -921,7 +921,6 @@ document.getElementById('settingsDeleteBtn').onclick = async () => {
     settingsModal.classList.remove('open');
   }
 };
-document.getElementById('cancelAuthBtn').onclick = () => authModal.classList.remove('open');
 
 async function doLogin(identifier, password){
   const res = await fetch('/api/auth/login', {
