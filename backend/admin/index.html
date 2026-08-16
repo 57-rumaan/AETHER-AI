@@ -215,6 +215,19 @@
     </div>
   </div>
 </div>
+  <div class="modal-backdrop" id="actionModal">
+  <div class="modal">
+    <h3>Add a custom quick action</h3>
+    <label>Button label (shown in the "+" menu)</label>
+    <input type="text" id="actionLabel" placeholder="e.g. Summarize this">
+    <label>What it sends</label>
+    <textarea id="actionPrompt" rows="2" placeholder="e.g. Summarize the following in 3 bullet points:"></textarea>
+    <div class="modal-actions">
+      <button id="cancelActionBtn">Cancel</button>
+      <button class="primary" id="confirmActionBtn">Add</button>
+    </div>
+  </div>
+  </div>
 
 <script>
 const loginScreen = document.getElementById('loginScreen');
