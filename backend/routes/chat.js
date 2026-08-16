@@ -10,7 +10,16 @@ router.get('/models', async (req, res) => {
     const config = await loadModelConfig();
     const list = [];
     for (const group of (config.linkedModels || [])) {
-      if (group.enabled) list.push({ id: group.id, customName: group.name, isLinked: true, ttsEnabled: !!group.tts });
+      if (group.enabled) {
+        list.push({
+          id: group.id,
+          customName: group.name,
+          isLinked: true,
+          ttsEnabled: !!group.tts,
+          composerFeatures: group.composerFeatures || { files: true, photos: true, generateImage: true, generateVideo: true },
+          customActions: group.customActions || []
+        });
+      }
     }
     res.json(list);
   } catch (err) {
