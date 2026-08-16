@@ -405,6 +405,8 @@ function renderGroups(){
   }
   modelConfig.linkedModels.forEach((group, gIndex) => {
     if (!group.capabilities) group.capabilities = [];
+    if (!group.composerFeatures) group.composerFeatures = { files: true, photos: true, generateImage: true, generateVideo: true };
+    if (!group.customActions) group.customActions = [];
     const card = document.createElement('div');
     card.className = 'group-card';
     let capsHtml = '';
@@ -422,6 +424,23 @@ function renderGroups(){
           </div>`;
       });
     }
+
+    let actionsHtml = '';
+    if (!group.customActions.length) {
+      actionsHtml = '<div class="cap-empty">No custom quick actions yet.</div>';
+    } else {
+      group.customActions.forEach((action, aIndex) => {
+        actionsHtml += `
+          <div class="cap-row">
+            <div class="cap-info">
+              <span class="cap-type">Quick action</span>
+              <span class="cap-target">${escapeHtmlAdmin(action.label)}</span>
+            </div>
+            <button class="x-btn" data-remove-action="${gIndex}:${aIndex}">✕</button>
+          </div>`;
+      });
+    }
+
     card.innerHTML = `
       <div class="group-head">
         <h3>${group.name}</h3>
@@ -431,14 +450,21 @@ function renderGroups(){
       </div>
       ${capsHtml}
       <button class="add-model-btn" data-add-cap="${gIndex}">+ Add a model to this bundle</button>
-      <div class="group-footer-row">
-        <span>Enabled</span>
-        <div class="toggle ${group.enabled ? 'on' : ''}" data-toggle-enabled="${gIndex}"></div>
-      </div>
-      <div class="group-footer-row">
-        <span>Voice replies (free browser voice)</span>
-        <div class="toggle ${group.tts ? 'on' : ''}" data-toggle-tts="${gIndex}"></div>
-      </div>
+
+      <div class="group-footer-row"><span>Enabled</span><div class="toggle ${group.enabled ? 'on' : ''}" data-toggle-enabled="${gIndex}"></div></div>
+      <div class="group-footer-row"><span>Voice replies (free browser voice)</span><div class="toggle ${group.tts ? 'on' : ''}" data-toggle-tts="${gIndex}"></div></div>
+      <div class="group-footer-row"><span>Calculator tool</span><div class="toggle ${(group.tools || []).includes('calculator') ? 'on' : ''}" data-toggle-tool="${gIndex}:calculator"></div></div>
+      <div class="group-footer-row"><span>Date & time tool</span><div class="toggle ${(group.tools || []).includes('datetime') ? 'on' : ''}" data-toggle-tool="${gIndex}:datetime"></div></div>
+
+      <div class="sub" style="margin:14px 0 4px;font-weight:600;color:var(--text)">"+" menu options for this model</div>
+      <div class="group-footer-row"><span>Show: Add files</span><div class="toggle ${group.composerFeatures.files !== false ? 'on' : ''}" data-toggle-feature="${gIndex}:files"></div></div>
+      <div class="group-footer-row"><span>Show: Add photos</span><div class="toggle ${group.composerFeatures.photos !== false ? 'on' : ''}" data-toggle-feature="${gIndex}:photos"></div></div>
+      <div class="group-footer-row"><span>Show: Generate image</span><div class="toggle ${group.composerFeatures.generateImage !== false ? 'on' : ''}" data-toggle-feature="${gIndex}:generateImage"></div></div>
+      <div class="group-footer-row"><span>Show: Generate video</span><div class="toggle ${group.composerFeatures.generateVideo !== false ? 'on' : ''}" data-toggle-feature="${gIndex}:generateVideo"></div></div>
+
+      <div class="sub" style="margin:14px 0 4px;font-weight:600;color:var(--text)">Custom quick actions</div>
+      ${actionsHtml}
+      <button class="add-model-btn" data-add-action="${gIndex}">+ Add a custom quick action</button>
     `;
     list.appendChild(card);
   });
@@ -483,8 +509,45 @@ function renderGroups(){
       renderGroups();
     };
   });
+  list.querySelectorAll('[data-toggle-tool]').forEach(el => {
+    el.onclick = async () => {
+      const [gIndex, toolId] = el.dataset.toggleTool.split(':');
+      const group = modelConfig.linkedModels[Number(gIndex)];
+      if (!group.tools) group.tools = [];
+      const i = group.tools.indexOf(toolId);
+      if (i === -1) group.tools.push(toolId); else group.tools.splice(i, 1);
+      await saveAll();
+      renderGroups();
+    };
+  });
+  list.querySelectorAll('[data-toggle-feature]').forEach(el => {
+    el.onclick = async () => {
+      const [gIndex, key] = el.dataset.toggleFeature.split(':');
+      const group = modelConfig.linkedModels[Number(gIndex)];
+      if (!group.composerFeatures) group.composerFeatures = { files: true, photos: true, generateImage: true, generateVideo: true };
+      group.composerFeatures[key] = group.composerFeatures[key] === false ? true : false;
+      await saveAll();
+      renderGroups();
+    };
+  });
+  list.querySelectorAll('[data-remove-action]').forEach(btn => {
+    btn.onclick = async () => {
+      const [gIndex, aIndex] = btn.dataset.removeAction.split(':').map(Number);
+      modelConfig.linkedModels[gIndex].customActions.splice(aIndex, 1);
+      await saveAll();
+      renderGroups();
+    };
+  });
+  list.querySelectorAll('[data-add-action]').forEach(btn => {
+    btn.onclick = () => openActionModal(Number(btn.dataset.addAction));
+  });
 }
 
+function escapeHtmlAdmin(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 function findModelLabel(cap){
   const provider = modelConfig.providers.find(p => p.id === cap.providerId);
   if (!provider) return null;
