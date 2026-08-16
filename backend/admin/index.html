@@ -616,6 +616,26 @@ document.getElementById('confirmCapBtn').onclick = async () => {
   capModal.classList.remove('open');
   renderGroups();
 };
+  const actionModal = document.getElementById('actionModal');
+let actionTargetGroupIndex = null;
+function openActionModal(gIndex){
+  actionTargetGroupIndex = gIndex;
+  document.getElementById('actionLabel').value = '';
+  document.getElementById('actionPrompt').value = '';
+  actionModal.classList.add('open');
+}
+document.getElementById('cancelActionBtn').onclick = () => actionModal.classList.remove('open');
+document.getElementById('confirmActionBtn').onclick = async () => {
+  const label = document.getElementById('actionLabel').value.trim();
+  const prompt = document.getElementById('actionPrompt').value.trim();
+  if (!label || !prompt || actionTargetGroupIndex === null) return;
+  const group = modelConfig.linkedModels[actionTargetGroupIndex];
+  if (!group.customActions) group.customActions = [];
+  group.customActions.push({ label, prompt });
+  await saveAll();
+  actionModal.classList.remove('open');
+  renderGroups();
+};
 
 document.getElementById('saveRules').onclick = async () => {
   await fetch('/api/admin/rules', {
