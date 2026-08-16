@@ -772,8 +772,6 @@ function handleFileSelected(file, isImage){
 
 const fileInput = document.getElementById('fileInput');
 const photoInput = document.getElementById('photoInput');
-document.getElementById('addFileBtn').onclick = () => { plusMenu.classList.remove('open'); fileInput.click(); };
-document.getElementById('addPhotoBtn').onclick = () => { plusMenu.classList.remove('open'); photoInput.click(); };
 fileInput.onchange = () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0], false); fileInput.value = ''; };
 photoInput.onchange = () => { if (photoInput.files[0]) handleFileSelected(photoInput.files[0], true); photoInput.value = ''; };
 
@@ -849,11 +847,6 @@ document.querySelectorAll('.suggestion-chip').forEach(chip => {
 
 // ================= Image generation =================
 const imageModal = document.getElementById('imageModal');
-document.getElementById('generateImageBtn').onclick = () => {
-  plusMenu.classList.remove('open');
-  document.getElementById('imagePrompt').value = '';
-  imageModal.classList.add('open');
-};
 document.getElementById('cancelImageBtn').onclick = () => imageModal.classList.remove('open');
 document.getElementById('confirmImageBtn').onclick = async () => {
   const prompt = document.getElementById('imagePrompt').value.trim();
@@ -884,7 +877,6 @@ document.getElementById('confirmImageBtn').onclick = async () => {
 
 // ================= Video placeholder =================
 const videoModal = document.getElementById('videoModal');
-document.getElementById('generateVideoBtn').onclick = () => { plusMenu.classList.remove('open'); videoModal.classList.add('open'); };
 document.getElementById('closeVideoBtn').onclick = () => videoModal.classList.remove('open');
 
 // ================= Auth =================
