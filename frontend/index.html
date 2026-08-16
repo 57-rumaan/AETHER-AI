@@ -484,7 +484,8 @@ async function loadModelList(){
     availableModels = [];
   }
   if (availableModels.length && !selectedModelId) {
-    selectModel(availableModels[0].id, availableModels[0].customName, availableModels[0].isLinked, availableModels[0].ttsEnabled);
+    const m = availableModels[0];
+    selectModel(m.id, m.customName, m.isLinked, m.ttsEnabled, m.composerFeatures, m.customActions);
   }
   if (!availableModels.length) {
     modelPickerBadge.textContent = 'no models';
@@ -502,7 +503,7 @@ function renderModelDropdown(){
     const btn = document.createElement('button');
     btn.textContent = m.customName + (m.isLinked ? ' 🔗' : '');
     btn.className = selectedModelId === m.id ? 'active' : '';
-    btn.onclick = (e) => { e.stopPropagation(); selectModel(m.id, m.customName, m.isLinked, m.ttsEnabled); };
+    btn.onclick = (e) => { e.stopPropagation(); selectModel(m.id, m.customName, m.isLinked, m.ttsEnabled, m.composerFeatures, m.customActions); };
     modelDropdown.appendChild(btn);
   });
 }
