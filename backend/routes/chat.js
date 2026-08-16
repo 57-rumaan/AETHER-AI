@@ -110,7 +110,7 @@ async function generateImage(providerId, apiKey, modelId, prompt) {
   }
 
   if (providerId === 'huggingface' || providerId === 'hugging-face') {
-    const r = await fetch(`https://api-inference.huggingface.co/models/${modelId}`, {
+    const r = await fetch(`https://router.huggingface.co/hf-inference/models/${modelId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ inputs: prompt })
