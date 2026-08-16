@@ -99,7 +99,7 @@ router.post('/generate-image', async (req, res) => {
 
 async function generateImage(providerId, apiKey, modelId, prompt) {
   if (providerId === 'openai') {
-    const r = await fetch('https://api.openai.com/v1/images/generations', {
+    const r = await fetch(`https://router.huggingface.co/hf-inference/models/${modelId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ model: modelId, prompt, n: 1, size: '1024x1024' })
