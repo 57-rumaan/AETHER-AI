@@ -108,6 +108,69 @@ async function generateImage(providerId, apiKey, modelId, prompt) {
     const data = await r.json();
     return data.data?.[0]?.url || null;
   }
+
+  if (providerId === 'huggingface' || providerId === 'hugging-face') {
+    const r = await fetch(`https://api-inference.huggingface.co/models/${modelId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ inputs: prompt })
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      console.error('Hugging Face image gen failed:', r.status, text.slice(0, 300));
+      return null;
+    }
+    const contentType = r.headers.get('content-type') || '';
+    if (!contentType.startsWith('image/')) {
+      const text = await r.text();
+      console.error('Hugging Face image gen returned non-image:', text.slice(0, 300));
+      return null;
+    }
+    const buffer = await r.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    return `data:${contentType};base64,${base64}`;
+  }
+
+  if (providerId === 'replicate') {
+    // modelId should be in "owner/model-name" form, e.g. "black-forest-labs/flux-schnell"
+    const r = await fetch(`https://api.replicate.com/v1/models/${modelId}/predictions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        Prefer: 'wait'
+      },
+      body: JSON.stringify({ input: { prompt } })
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      console.error('Replicate image gen failed:', r.status, text.slice(0, 300));
+      return null;
+    }
+    let data = await r.json();
+
+    const extractOutput = (d) => {
+      if (Array.isArray(d.output)) return d.output[0] || null;
+      if (typeof d.output === 'string') return d.output;
+      return null;
+    };
+
+    if (data.status === 'succeeded') return extractOutput(data);
+
+    const getUrl = data.urls?.get;
+    for (let i = 0; i < 10 && getUrl; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const pr = await fetch(getUrl, { headers: { Authorization: `Bearer ${apiKey}` } });
+      const pdata = await pr.json();
+      if (pdata.status === 'succeeded') return extractOutput(pdata);
+      if (pdata.status === 'failed' || pdata.status === 'canceled') {
+        console.error('Replicate prediction failed:', JSON.stringify(pdata).slice(0, 300));
+        return null;
+      }
+    }
+    return null;
+  }
+
   return null;
 }
 
