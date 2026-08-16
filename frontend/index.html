@@ -507,13 +507,61 @@ function renderModelDropdown(){
   });
 }
 
-function selectModel(id, label, isLinked, ttsEnabled){
+let selectedComposerFeatures = { files: true, photos: true, generateImage: true, generateVideo: true };
+let selectedCustomActions = [];
+
+function selectModel(id, label, isLinked, ttsEnabled, composerFeatures, customActions){
   selectedModelId = id;
   selectedIsLinked = !!isLinked;
   selectedTtsEnabled = !!ttsEnabled;
+  selectedComposerFeatures = composerFeatures || { files: true, photos: true, generateImage: true, generateVideo: true };
+  selectedCustomActions = customActions || [];
   modelPickerBadge.textContent = label;
   modelDropdown.classList.remove('open');
   renderModelDropdown();
+  renderPlusMenu();
+}
+
+function renderPlusMenu(){
+  const menu = document.getElementById('plusMenu');
+  menu.innerHTML = '';
+  if (selectedComposerFeatures.files !== false) {
+    menu.innerHTML += '<button id="addFileBtn">📎 Add files</button>';
+  }
+  if (selectedComposerFeatures.photos !== false) {
+    menu.innerHTML += '<button id="addPhotoBtn">🖼️ Add photos</button>';
+  }
+  if (selectedComposerFeatures.generateImage !== false) {
+    menu.innerHTML += '<button id="generateImageBtn">🎨 Generate image</button>';
+  }
+  if (selectedComposerFeatures.generateVideo !== false) {
+    menu.innerHTML += '<button id="generateVideoBtn">🎬 Generate video</button>';
+  }
+  selectedCustomActions.forEach((action, i) => {
+    menu.innerHTML += '<button data-custom-action="' + i + '">⚡ ' + escapeHtml(action.label) + '</button>';
+  });
+
+  const addFileBtn = document.getElementById('addFileBtn');
+  if (addFileBtn) addFileBtn.onclick = () => { plusMenu.classList.remove('open'); fileInput.click(); };
+  const addPhotoBtn = document.getElementById('addPhotoBtn');
+  if (addPhotoBtn) addPhotoBtn.onclick = () => { plusMenu.classList.remove('open'); photoInput.click(); };
+  const genImgBtn = document.getElementById('generateImageBtn');
+  if (genImgBtn) genImgBtn.onclick = () => {
+    plusMenu.classList.remove('open');
+    document.getElementById('imagePrompt').value = '';
+    imageModal.classList.add('open');
+  };
+  const genVidBtn = document.getElementById('generateVideoBtn');
+  if (genVidBtn) genVidBtn.onclick = () => { plusMenu.classList.remove('open'); videoModal.classList.add('open'); };
+  menu.querySelectorAll('[data-custom-action]').forEach(btn => {
+    btn.onclick = () => {
+      plusMenu.classList.remove('open');
+      const action = selectedCustomActions[Number(btn.dataset.customAction)];
+      input.value = action.prompt;
+      input.focus();
+      input.dispatchEvent(new Event('input'));
+    };
+  });
 }
 
 modelPicker.onclick = (e) => {
