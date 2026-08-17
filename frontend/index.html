@@ -1052,6 +1052,17 @@ micBtn.onclick = () => {
   if (recognizing) { recognition.stop(); return; }
   recognizing = true; micBtn.classList.add('recording'); recognition.start();
 };
+  
+// ================= Image preview (lightbox) =================
+const imageLightbox = document.getElementById('imageLightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+messages.addEventListener('click', (e) => {
+  const img = e.target.closest('img.generated, img.attached-preview');
+  if (!img) return;
+  lightboxImg.src = img.src;
+  imageLightbox.classList.add('open');
+});
+imageLightbox.onclick = () => imageLightbox.classList.remove('open');
 
 // ================= Init =================
 loadModelList();
